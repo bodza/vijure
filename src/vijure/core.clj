@@ -1764,7 +1764,6 @@
         (field Bytes        arg)            ;; argument of the command
         (field Bytes        nextcmd)        ;; next command (null if none)
         (field Bytes        cmd)            ;; the name of the command (except for :make)
-        (field Bytes*       cmdlinep)       ;; pointer to pointer of allocated cmdline
         (field int          cmdidx)         ;; the index for the command
         (field long         argt)           ;; flags for the command
         (field boolean      skip)           ;; don't execute the command, only parse it
@@ -7015,443 +7014,273 @@
 ;;
 ;; This function may be called recursively!
 
-(defn- #_Bytes do-one-cmd [#_Bytes' a'cmdlinep, #_boolean verbose]
-    (§
-        ((ß Bytes errormsg =) nil)         ;; error message
-        ((ß boolean save_msg_scroll =) @msg_scroll)
-        ((ß int did_esilent =) 0)
+(defn- #_Bytes do-one-cmd [#_Bytes' a'cmdline, #_boolean verbose]
+    ;; When the last file has not been edited :q has to be typed twice.
+    (when (non-zero? @quitmore)
+        (swap! quitmore dec))
+    (let [a'errormsg (atom (#_Bytes object nil)) lmax (line-count @curbuf)
+          #_exarg_C ea (assoc (NEW_exarg_C) :line1 1 :line2 1)
+          ;; "#!anything" is handled like a comment.
+          ea (if (and (at? @a'cmdline 0 (byte \#)) (at? @a'cmdline 1 (byte \!)))
+                ea
+                (let-when [#_Bytes s @a'cmdline
+                      [s abort] ;; 1. Skip comment lines and leading white space and colons.
+                        (let [s (loop-when-recur s (any == (.at s 0) (byte \space) TAB (byte \:)) (.plus s 1) => s)]
+                            ;; ignore comment and empty lines
+                            (cond (at? s (byte \")) ;; """
+                                [s :abort]
+                            (eos? s)
+                                (do (reset! ex_pressedreturn true) [s :abort])
+                            :else ;; 2. Handle command modifiers.
+                                [(if (asc-isdigit (.at s 0)) (skipwhite (skipdigits s)) s) nil]
+                            ))
+                      ea (assoc ea :cmd s)
+                ] (not abort) => ea
 
-        ((ß exarg_C ea =) (NEW_exarg_C))     ;; Ex command arguments
-        ((ß ea =) (assoc ea :line1 1))
-        ((ß ea =) (assoc ea :line2 1))
+                    (let-when [ea (assoc ea :skip (or @did_emsg @got_int))
+                          ;; 3. Skip over the range to find the command.  Let "p" point to after it.
+                          ;;
+                          ;; We need the command to know what kind of range it uses.
+                          o'cmd (:cmd ea)
+                          ea (update ea :cmd skip-range)
+                          ea (if (at? (:cmd ea) (byte \*)) (assoc ea :cmd (skipwhite (.plus (:cmd ea) 1))) ea)
+                          [ea #_Bytes p] (find-command ea)
+                          ;; 4. parse a range specifier of the form: addr [,addr] [;addr] ...
+                          ;;
+                          ;; where 'addr' is:
+                          ;;
+                          ;; %          (entire file)
+                          ;; $  [+-NUM]
+                          ;; 'x [+-NUM] (where x denotes a currently defined mark)
+                          ;; .  [+-NUM]
+                          ;; [+-NUM]...
+                          ;; NUM
+                          ;;
+                          ;; The ea.cmd pointer is updated to point to the first character following the range spec.
+                          ;; If an initial address is found, but no second, the upper bound is equal to the lower.
+                          ea (assoc ea :addr_type (if (!= (:cmdidx ea) CMD_SIZE) (:cmd_addr_type (... cmdnames (:cmdidx ea))) ADDR_LINES))
+                          ;; repeat for all ',' or ';' separated addresses
+                          [ea #_long lnum abort]
+                            (loop [ea (assoc ea :cmd o'cmd)]
+                                (let-when [ea (assoc ea :line1 (:line2 ea))
+                                      ea (assoc ea :line2 (condp == (:addr_type ea) ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin)))
+                                      ea (update ea :cmd skipwhite)
+                                      [lnum ea] (let [a's (atom (:cmd ea))] [(get-address a's, (:addr_type ea), (:skip ea), (zero? (:addr_count ea))) (assoc ea :cmd @a's)])
+                                      [ea abort]
+                                        (cond (nil? (:cmd ea)) ;; error detected
+                                            [ea :abort]
+                                        (== lnum MAXLNUM)
+                                            (cond (at? (:cmd ea) (byte \%)) ;; '%' - all lines
+                                                (let [ea (update ea :cmd plus 1)]
+                                                    (condp == (:addr_type ea)
+                                                        ADDR_LINES [(-> ea (assoc :line1 1 :line2 lmax) (update :addr_count inc)) nil]
+                                                        ;; There is no Vim command which uses '%' and ADDR_WINDOWS.
+                                                        ADDR_WINDOWS (do (reset! a'errormsg e_invrange) [ea :abort])
+                                                    ))
+                                            (at? (:cmd ea) (byte \*)) ;; '*' - visual area
+                                                (if (!= (:addr_type ea) ADDR_LINES)
+                                                    (do (reset! a'errormsg e_invrange) [ea :abort])
+                                                    (let-when [ea (update ea :cmd plus 1)] (not (:skip ea)) => [ea nil]
+                                                        (let-when                             [#_pos_C fp (getmark (byte \<), false)] (check-mark fp) => [ea :abort]
+                                                            (let-when [ea (assoc ea :line1 (:lnum fp)) fp (getmark (byte \>), false)] (check-mark fp) => [ea :abort]
+                                                                [(-> ea (assoc :line2 (:lnum fp)) (update :addr_count inc)) nil]
+                                                            ))
+                                                    ))
+                                            :else
+                                                [ea nil])
+                                        :else
+                                            [(assoc ea :line2 lnum) nil])
+                                ] (not abort) => [ea lnum abort]
 
-        ;; When the last file has not been edited :q has to be typed twice.
-        (when (non-zero? @quitmore)
-            (swap! quitmore dec))
+                                    (let [ea (update ea :addr_count inc)]
+                                        (cond (at? (:cmd ea) (byte \;))
+                                            (do (when (not (:skip ea))
+                                                    (swap! curwin assoc-in [:w_cursor :lnum] (:line2 ea)))
+                                                (recur (update ea :cmd plus 1)))
+                                        (at? (:cmd ea) (byte \,))
+                                            (recur (update ea :cmd plus 1))
+                                        :else
+                                            [ea lnum nil]
+                                        ))
+                                ))
+                    ] (not abort) => ea
 
-;       doend:
-;       {
-            ;; "#!anything" is handled like a comment.
-            (if (and (at? @a'cmdlinep (byte \#)) (at? @a'cmdlinep 1 (byte \!)))
-                (ß BREAK doend)
-            )
+                        ;; One address given: set start and end lines.
+                        (let-when [ea (if (== (:addr_count ea) 1)
+                                    (let [ea (assoc ea :line1 (:line2 ea))]
+                                        (if (== lnum MAXLNUM) (assoc ea :addr_count 0) ea)) ;; ... but only implicit: really no address given
+                                    ea)
+                              ;; Don't leave the cursor on an illegal line (caused by ';').
+                              _ (swap! curwin check-cursor-lnum)
+                              ;; 5. Parse the command.
+                              ;;
+                              ;; Skip ':' and any white space
+                              ea (update ea :cmd skipwhite)
+                              ea (loop-when-recur ea (at? (:cmd ea) (byte \:)) (assoc ea :cmd (skipwhite (.plus (:cmd ea) 1))) => ea)
+                              ;; If we got a line, but no command, then go to the line.
+                              ;; If we find a '|' or '\n', we set ea.nextcmd.
+                              ea (assoc ea :nextcmd (check-nextcmd (:cmd ea)))
+                              [ea abort]
+                                (if (or (eos? (:cmd ea)) (at? (:cmd ea) (byte \")) (some? (:nextcmd ea))) ;; """
+                                    ;; strange vi behaviour:
+                                    ;; ":3"         jumps to line 3
+                                    ;; ":3|..."     prints line 3
+                                    ;; ":|"         prints current line
+                                    (let [ea (cond (:skip ea) ;; skip this if inside :if
+                                                ea
+                                            (at? (:cmd ea) (byte \|))
+                                                (let [ea (assoc ea :cmdidx (ß CMD_print) :argt (+ RANGE COUNT))]
+                                                    (reset! a'errormsg (invalid-range ea))
+                                                    (if (nil? @a'errormsg)
+                                                        (let [ea (correct-range ea) _ (ß ea (ex-print ea))]
+                                                            ea)
+                                                        ea
+                                                    ))
+                                            (non-zero? (:addr_count ea))
+                                                ;; With '-' in 'cpoptions' a line number past the file is an error, otherwise put it at the end of the file.
+                                                (let [ea (if (< lmax (:line2 ea)) (assoc ea :line2 (if (some? (vim-strbyte @p_cpo, CPO_MINUS)) -1 lmax)) ea)]
+                                                    (if (< (:line2 ea) 0)
+                                                        (reset! a'errormsg e_invrange)
+                                                        (do (swap! curwin assoc-in [:w_cursor :lnum] (if (zero? (:line2 ea)) 1 (:line2 ea)))
+                                                            (swap! curwin beginline (| BL_SOL BL_FIX))
+                                                        ))
+                                                    ea)
+                                            :else
+                                                ea
+                                            )]
+                                        [ea :abort])
+                                    [ea nil])
+                        ] (not abort) => ea
 
-            ;; Repeat until no more command modifiers are found.
+                            (if (== (:cmdidx ea) CMD_SIZE)
+                                (do (when (not (:skip ea))
+                                        (STRCPY @ioBuff, (u8 "E492: Not an editor command"))
+                                        (when (not verbose)
+                                            (append-command @a'cmdline))
+                                        (reset! a'errormsg @ioBuff)
+                                        (reset! did_emsg_syntax true))
+                                    ea)
 
-            ((ß ea =) (assoc ea :cmd @a'cmdlinep))
-            (loop []
-                ;; 1. Skip comment lines and leading white space and colons.
+                                (let-when [[ea p] ;; forced commands
+                                        (if (and (at? p (byte \!)) (!= (:cmdidx ea) CMD_substitute))
+                                            [(assoc ea :forceit true) (.plus p 1)]
+                                            [(assoc ea :forceit false) p])
+                                      ;; 6. Parse arguments.
+                                      ea (assoc ea :argt (:cmd_argt (... cmdnames (:cmdidx ea))))
+                                      abort
+                                        (when (not (:skip ea))
+                                            (cond (and (text-locked) (non-flag? (:argt ea) CMDWIN))
+                                                (do ;; Command not allowed when editing the command line.
+                                                    (reset! a'errormsg (if (non-zero? @cmdwin_type) e_cmdwin e_secure))
+                                                    :abort)
+                                            (and (non-flag? (:argt ea) RANGE) (< 0 (:addr_count ea)))
+                                                (do ;; no range allowed
+                                                    (reset! a'errormsg e_norange)
+                                                    :abort
+                                                )))
+                                ] (not abort) => ea
 
-                (loop-when [] (or (at? (:cmd ea) (byte \space)) (at? (:cmd ea) TAB) (at? (:cmd ea) (byte \:)))
-                    ((ß ea =) (update ea :cmd plus 1))
-                    (recur)
-                )
+                                    (if (and (non-flag? (:argt ea) BANG) (:forceit ea)) ;; no <!> allowed
+                                        (do (reset! a'errormsg e_nobang)
+                                            ea)
 
-                ;; ignore comment and empty lines
-                (if (at? (:cmd ea) (byte \")) ;; """
-                    (ß BREAK doend)
-                )
-                (when (eos? (:cmd ea))
-                    (reset! ex_pressedreturn true)
-                    (ß BREAK doend)
-                )
+                                        ;; Don't complain about the range if it is not used.
+                                        (let-when [[ea abort]
+                                                (if (not (:skip ea))
+                                                    ;; If the range is backwards, ask for confirmation and, if given,
+                                                    ;; swap ea.line1 with ea.line2, so it's forwards again.
+                                                    (let-when [[ea abort]
+                                                            (if (< (:line2 ea) (:line1 ea))
+                                                                (cond verbose
+                                                                    (do (reset! a'errormsg (u8 "E493: Backwards range given"))
+                                                                        [ea :abort])
+                                                                (!= (ask-yesno (u8 "Backwards range given, OK to swap"), false) (byte \y))
+                                                                    [ea :abort]
+                                                                :else
+                                                                    [(assoc ea :line1 (:line2 ea) :line2 (:line1 ea)) nil])
+                                                                [ea nil])
+                                                    ] (not abort) => [ea abort]
 
-                ;; 2. Handle command modifiers.
+                                                        (reset! a'errormsg (invalid-range ea))
+                                                        [ea (if (some? @a'errormsg) :abort nil)])
+                                                    [ea nil])
+                                        ] (not abort) => ea
 
-                ((ß Bytes[] a'p =) (atom (#_Bytes object (:cmd ea))))
-                (when (asc-isdigit (.at @a'p 0))
-                    (reset! a'p (skipwhite (skipdigits @a'p))))
-                ((ß SWITCH) (.at @a'p 0)
-;                   
-                )
-                (ß BREAK)
-                (recur)
-            )
+                                            ;; default is 1, not cursor
+                                            (let-when [ea (if (and (flag? (:argt ea) NOTADR) (zero? (:addr_count ea))) (assoc ea :line2 1) ea)
+                                                  ea (correct-range ea)
+                                                  ;; Skip to start of argument.
+                                                  ea (assoc ea :arg (skipwhite p))
+                                                  ea (if (and (flag? (:argt ea) DFLALL) (zero? (:addr_count ea)))
+                                                        (assoc ea :line1 1 :line2 (condp == (:addr_type ea) ADDR_LINES lmax ADDR_WINDOWS (current-win-nr nil)))
+                                                        ea)
+                                                  ;; Check for a count.
+                                                  [ea abort]
+                                                    (if (and (flag? (:argt ea) COUNT) (asc-isdigit (.at (:arg ea) 0)))
+                                                        (let [[#_long n ea] (let [a's (atom (:arg ea))] [(getdigits a's) (assoc ea :arg @a's)])
+                                                              ea (update ea :arg skipwhite)]
+                                                            (cond (and (< n 1) (non-flag? (:argt ea) ZEROR))
+                                                                (do (reset! a'errormsg e_zerocount)
+                                                                    [ea :abort])
+                                                            (flag? (:argt ea) NOTADR) ;; e.g. :buffer 2, :sleep 3
+                                                                (let [ea (assoc ea :line2 n)]
+                                                                    [(if (zero? (:addr_count ea)) (assoc ea :addr_count 1) ea) nil])
+                                                            :else
+                                                                (let [ea (assoc ea :line1 (:line2 ea)) ea (update ea :line2 + (dec n)) ea (update ea :addr_count inc)]
+                                                                    ;; Be vi compatible: no error message for out of range.
+                                                                    [(update ea :line2 min lmax) nil])
+                                                            ))
+                                                        [ea nil])
+                                            ] (not abort) => ea
 
-            ((ß ea =) (assoc ea :skip (or @did_emsg @got_int)))
+                                                (cond (and (non-flag? (:argt ea) EXTRA) (non-eos? (:arg ea)) (not-at? (:arg ea) (byte \"))) ;; """
+                                                    (do (reset! a'errormsg e_trailing)
+                                                        ea)
 
-            ;; 3. Skip over the range to find the command.  Let "p" point to after it.
-            ;;
-            ;; We need the command to know what kind of range it uses.
+                                                (and (flag? (:argt ea) NEEDARG) (eos? (:arg ea)))
+                                                    (do (reset! a'errormsg e_argreq)
+                                                        ea)
 
-            ((ß Bytes cmd =) (:cmd ea))
-            ((ß ea =) (update ea :cmd skip-range))
-            (if (at? (:cmd ea) (byte \*))
-                ((ß ea =) (assoc ea :cmd (skipwhite (.plus (:cmd ea) 1))))
-            )
+                                                :else
+                                                    ;; Skip the command when it's not going to be executed.
+                                                    ;; The commands like :if, :endif, etc. always need to be executed.
+                                                    ;; Also make an exception for commands that handle a trailing command themselves.
+                                                    (let-when [abort
+                                                            (when (:skip ea)
+                                                                ;; Commands that handle '|' themselves.
+                                                                ;; Check:  A command should either have the TRLBAR flag,
+                                                                ;; appear in this list or appear in the list at ":help :bar".
+                                                                (condp == (:cmdidx ea) CMD_substitute nil :abort))
+                                                    ] (not abort) => ea
 
-            ((ß [ea Bytes p] =) (find-command ea))
-
-            ;; 4. parse a range specifier of the form: addr [,addr] [;addr] ..
-            ;;
-            ;; where 'addr' is:
-            ;;
-            ;; %          (entire file)
-            ;; $  [+-NUM]
-            ;; 'x [+-NUM] (where x denotes a currently defined mark)
-            ;; .  [+-NUM]
-            ;; [+-NUM]..
-            ;; NUM
-            ;;
-            ;; The ea.cmd pointer is updated to point to the first character following the range spec.
-            ;; If an initial address is found, but no second, the upper bound is equal to the lower.
-
-            ((ß ea =) (assoc ea :addr_type (if (!= (:cmdidx ea) CMD_SIZE) (:cmd_addr_type (... cmdnames (:cmdidx ea))) ADDR_LINES)))
-
-            (ß long lnum)
-
-            ;; repeat for all ',' or ';' separated addresses
-            ((ß ea =) (assoc ea :cmd cmd))
-            (loop []
-                ((ß ea =) (assoc ea :line1 (:line2 ea)))
-                (condp == (:addr_type ea)
-                    ADDR_LINES
-                    (do
-                        ;; default is current line number
-                        ((ß ea =) (assoc ea :line2 (:lnum (:w_cursor @curwin))))
-                        (ß BREAK)
-                    )
-
-                    ADDR_WINDOWS
-                    (do
-                        ((ß lnum =) (current-win-nr @curwin))
-                        ((ß ea =) (assoc ea :line2 lnum))
-                        (ß BREAK)
-                    )
-                )
-                ((ß ea =) (update ea :cmd skipwhite))
-                (let [__ (atom (#_Bytes object (:cmd ea)))]
-                    ((ß lnum =) (get-address __, (:addr_type ea), (:skip ea), (zero? (:addr_count ea))))
-                    ((ß ea =) (assoc ea :cmd @__)))
-                (if (nil? (:cmd ea))                 ;; error detected
-                    (ß BREAK doend)
-                )
-                (cond (== lnum MAXLNUM)
-                (do
-                    (cond (at? (:cmd ea) (byte \%))          ;; '%' - all lines
-                    (do
-                        ((ß ea =) (update ea :cmd plus 1))
-                        (condp == (:addr_type ea)
-                            ADDR_LINES
-                            (do
-                                ((ß ea =) (assoc ea :line1 1))
-                                ((ß ea =) (assoc ea :line2 (line-count @curbuf)))
-                                (ß BREAK)
-                            )
-
-                            ADDR_WINDOWS
-                            (do
-                                ;; There is no Vim command which uses '%' and ADDR_WINDOWS.
-                                ((ß errormsg =) e_invrange)
-                                (ß BREAK doend)
-                            )
-                        )
-                        ((ß ea =) (update ea :addr_count inc))
-                    )
-                    (at? (:cmd ea) (byte \*))     ;; '*' - visual area
-                    (do
-                        (when (!= (:addr_type ea) ADDR_LINES)
-                            ((ß errormsg =) e_invrange)
-                            (ß BREAK doend)
-                        )
-
-                        ((ß ea =) (update ea :cmd plus 1))
-                        (when (not (:skip ea))
-                            ((ß pos_C fp =) (getmark (byte \<), false))
-                            (if (not (check-mark fp))
-                                (ß BREAK doend)
-                            )
-                            ((ß ea =) (assoc ea :line1 (:lnum fp)))
-                            ((ß fp =) (getmark (byte \>), false))
-                            (if (not (check-mark fp))
-                                (ß BREAK doend)
-                            )
-                            ((ß ea =) (assoc ea :line2 (:lnum fp)))
-                            ((ß ea =) (update ea :addr_count inc))
-                        )
+                                                        ;; 7. Switch on command name.
+                                                        ;;
+                                                        ;; The "ea" structure holds the arguments that can be used.
+                                                        ;; Call the function to execute the command.
+                                                        (let [ea (assoc ea :errmsg nil)
+                                                              ea ((:cmd_func (... cmdnames (:cmdidx ea))) ea)]
+                                                            (when (some? (:errmsg ea))
+                                                                (reset! a'errormsg (:errmsg ea)))
+                                                            ea)
+                                                    ))
+                                            ))
+                                    ))
+                            ))
                     ))
-                )
-                :else
-                (do
-                    ((ß ea =) (assoc ea :line2 lnum))
-                ))
-                ((ß ea =) (update ea :addr_count inc))
-
-                (cond (at? (:cmd ea) (byte \;))
-                (do
-                    (when (not (:skip ea))
-                        (swap! curwin assoc-in [:w_cursor :lnum] (:line2 ea)))
-                )
-                (not-at? (:cmd ea) (byte \,))
-                (do
-                    (ß BREAK)
-                ))
-                ((ß ea =) (update ea :cmd plus 1))
-                (recur)
-            )
-
-            ;; One address given: set start and end lines.
-            (when (== (:addr_count ea) 1)
-                ((ß ea =) (assoc ea :line1 (:line2 ea)))
-                ;; ... but only implicit: really no address given
-                (if (== lnum MAXLNUM)
-                    ((ß ea =) (assoc ea :addr_count 0))
-                )
-            )
-
-            ;; Don't leave the cursor on an illegal line (caused by ';').
-            (swap! curwin check-cursor-lnum)
-
-            ;; 5. Parse the command.
-
-            ;; Skip ':' and any white space
-
-            ((ß ea =) (update ea :cmd skipwhite))
-            (loop-when [] (at? (:cmd ea) (byte \:))
-                ((ß ea =) (assoc ea :cmd (skipwhite (.plus (:cmd ea) 1))))
-                (recur)
-            )
-
-            ;; If we got a line, but no command, then go to the line.
-            ;; If we find a '|' or '\n' we set ea.nextcmd.
-
-            ((ß ea =) (assoc ea :nextcmd (check-nextcmd (:cmd ea))))
-            (when (or (eos? (:cmd ea)) (at? (:cmd ea) (byte \")) (some? (:nextcmd ea)))  ;; """
-                ;; strange vi behaviour:
-                ;; ":3"         jumps to line 3
-                ;; ":3|..."     prints line 3
-                ;; ":|"         prints current line
-
-                (if (:skip ea)    ;; skip this if inside :if
-                    (ß BREAK doend)
-                )
-                (cond (at? (:cmd ea) (byte \|))
-                (do
-                    ((ß ea =) (assoc ea :cmdidx (ß CMD_print)))
-                    ((ß ea =) (assoc ea :argt (+ RANGE COUNT)))
-                    (when (nil? ((ß errormsg =) (invalid-range ea)))
-                        ((ß ea =) (correct-range ea))
-;                       ex_print(ea);
-                    )
-                )
-                (non-zero? (:addr_count ea))
-                (do
-                    (when (< (line-count @curbuf) (:line2 ea))
-                        ;; With '-' in 'cpoptions' a line number past the file is an error,
-                        ;; otherwise put it at the end of the file.
-                        ((ß ea =) (assoc ea :line2 (if (some? (vim-strbyte @p_cpo, CPO_MINUS)) -1 (line-count @curbuf))))
-                    )
-
-                    (cond (< (:line2 ea) 0)
-                    (do
-                        ((ß errormsg =) e_invrange)
-                    )
-                    :else
-                    (do
-                        (swap! curwin assoc-in [:w_cursor :lnum] (if (zero? (:line2 ea)) 1 (:line2 ea)))
-                        (swap! curwin beginline (| BL_SOL BL_FIX))
-                    ))
-                ))
-                (ß BREAK doend)
-            )
-
-            (when (nil? p)
-                ((ß errormsg =) (if (not (:skip ea)) (u8 "E464: Ambiguous use of user-defined command") errormsg))
-                (ß BREAK doend)
-            )
-
-            (when (== (:cmdidx ea) CMD_SIZE)
-                (when (not (:skip ea))
-                    (STRCPY @ioBuff, (u8 "E492: Not an editor command"))
-                    (if (not verbose)
-                        (append-command @a'cmdlinep))
-                    ((ß errormsg =) @ioBuff)
-                    (reset! did_emsg_syntax true)
-                )
-                (ß BREAK doend)
-            )
-
-            ;; forced commands
-            (cond (and (at? p (byte \!)) (!= (:cmdidx ea) CMD_substitute))
-            (do
-                ((ß p =) (.plus p 1))
-                ((ß ea =) (assoc ea :forceit true))
-            )
-            :else
-            (do
-                ((ß ea =) (assoc ea :forceit false))
-            ))
-
-            ;; 6. Parse arguments.
-
-            ((ß ea =) (assoc ea :argt (:cmd_argt (... cmdnames (:cmdidx ea)))))
-
-            (when (not (:skip ea))
-                (when (and (text-locked) (non-flag? (:argt ea) CMDWIN))
-                    ;; Command not allowed when editing the command line.
-                    ((ß errormsg =) (if (non-zero? @cmdwin_type) e_cmdwin e_secure))
-                    (ß BREAK doend)
-                )
-
-                (when (and (non-flag? (:argt ea) RANGE) (< 0 (:addr_count ea)))
-                    ;; no range allowed
-                    ((ß errormsg =) e_norange)
-                    (ß BREAK doend)
-                )
-            )
-
-            (when (and (non-flag? (:argt ea) BANG) (:forceit ea)) ;; no <!> allowed
-                ((ß errormsg =) e_nobang)
-                (ß BREAK doend)
-            )
-
-            ;; Don't complain about the range if it is not used
-            ;; (could happen if line_count is accidentally set to 0).
-
-            (when (not (:skip ea))
-                ;; If the range is backwards, ask for confirmation and, if given,
-                ;; swap ea.line1 & ea.line2 so it's forwards again.
-
-                (when (< (:line2 ea) (:line1 ea))
-                    (when verbose
-                        ((ß errormsg =) (u8 "E493: Backwards range given"))
-                        (ß BREAK doend)
-                    )
-                    (if (!= (ask-yesno (u8 "Backwards range given, OK to swap"), false) (byte \y))
-                        (ß BREAK doend)
-                    )
-
-                    ((ß lnum =) (:line1 ea))
-                    ((ß ea =) (assoc ea :line1 (:line2 ea)))
-                    ((ß ea =) (assoc ea :line2 lnum))
-                )
-                (if (some? ((ß errormsg =) (invalid-range ea)))
-                    (ß BREAK doend)
-                )
-            )
-
-            (if (and (flag? (:argt ea) NOTADR) (zero? (:addr_count ea))) ;; default is 1, not cursor
-                ((ß ea =) (assoc ea :line2 1))
-            )
-
-            ((ß ea =) (correct-range ea))
-
-            ;; Skip to start of argument.
-
-            ((ß ea =) (assoc ea :arg (skipwhite p)))
-
-            (when (and (flag? (:argt ea) DFLALL) (zero? (:addr_count ea)))
-                ((ß ea =) (assoc ea :line1 1))
-                (condp == (:addr_type ea)
-                    ADDR_LINES
-                    (do
-                        ((ß ea =) (assoc ea :line2 (line-count @curbuf)))
-                        (ß BREAK)
-                    )
-
-                    ADDR_WINDOWS
-                    (do
-                        ((ß ea =) (assoc ea :line2 (current-win-nr nil)))
-                        (ß BREAK)
-                    )
-                )
-            )
-
-            ;; Check for a count.
-
-            (when (and (flag? (:argt ea) COUNT) (asc-isdigit (.at (:arg ea) 0)))
-                (ß long n)
-                (let [__ (atom (#_Bytes object (:arg ea)))]
-                    ((ß n =) (getdigits __))
-                    ((ß ea =) (assoc ea :arg @__)))
-                ((ß ea =) (update ea :arg skipwhite))
-                (when (and (<= n 0) (non-flag? (:argt ea) ZEROR))
-                    ((ß errormsg =) e_zerocount)
-                    (ß BREAK doend)
-                )
-                (cond (flag? (:argt ea) NOTADR)    ;; e.g. :buffer 2, :sleep 3
-                (do
-                    ((ß ea =) (assoc ea :line2 n))
-                    (if (zero? (:addr_count ea))
-                        ((ß ea =) (assoc ea :addr_count 1))
-                    )
-                )
-                :else
-                (do
-                    ((ß ea =) (assoc ea :line1 (:line2 ea)))
-                    ((ß ea =) (update ea :line2 + (dec n)))
-                    ((ß ea =) (update ea :addr_count inc))
-
-                    ;; Be vi compatible: no error message for out of range.
-
-                    ((ß ea =) (update ea :line2 min (line-count @curbuf)))
-                ))
-            )
-
-            (when (and (non-flag? (:argt ea) EXTRA) (non-eos? (:arg ea)) (not-at? (:arg ea) (byte \"))) ;; """
-                ((ß errormsg =) e_trailing)
-                (ß BREAK doend)
-            )
-
-            (when (and (flag? (:argt ea) NEEDARG) (eos? (:arg ea)))
-                ((ß errormsg =) e_argreq)
-                (ß BREAK doend)
-            )
-
-            ;; Skip the command when it's not going to be executed.
-            ;; The commands like :if, :endif, etc. always need to be executed.
-            ;; Also make an exception for commands that handle a trailing command themselves.
-
-            (when (:skip ea)
-                (condp ==? (:cmdidx ea)
-                    ;; Commands that handle '|' themselves.  Check: A command should
-                    ;; either have the TRLBAR flag, appear in this list or appear in
-                    ;; the list at ":help :bar".
-                    CMD_substitute
-                    (do
-                        (ß BREAK)
-                    )
-
-                    (ß DEFAULT)
-                    (do
-                        (ß BREAK doend)
-                    )
-                )
-            )
-
-            ;; 7. Switch on command name.
-            ;;
-            ;; The "ea" structure holds the arguments that can be used.
-
-            ((ß ea =) (assoc ea :cmdlinep a'cmdlinep))
-
-            ;; Call the function to execute the command.
-
-            ((ß ea =) (assoc ea :errmsg nil))
-;           ea = cmdnames[ea.cmdidx].cmd_func(ea);
-            ((ß errormsg =) (if (some? (:errmsg ea)) (:errmsg ea) errormsg))
-;       }
-
-        (if (zero? (:lnum (:w_cursor @curwin)))  ;; can happen with zero line number
-            (swap! curwin assoc-in [:w_cursor :lnum] 1)
-        )
-
-        (when (and (some? errormsg) (non-eos? errormsg) (not @did_emsg))
+            )]
+        (when (zero? (:lnum (:w_cursor @curwin))) ;; can happen with zero line number
+            (swap! curwin assoc-in [:w_cursor :lnum] 1))
+        (when (and (some? @a'errormsg) (non-eos? @a'errormsg) (not @did_emsg))
             (when verbose
-                (when (BNE errormsg, @ioBuff)
-                    (STRCPY @ioBuff, errormsg)
-                    ((ß errormsg =) @ioBuff)
-                )
-                (append-command @a'cmdlinep)
-            )
-            (emsg errormsg)
+                (when (BNE @a'errormsg, @ioBuff)
+                    (STRCPY @ioBuff, @a'errormsg)
+                    (reset! a'errormsg @ioBuff))
+                (append-command @a'cmdline))
+            (emsg @a'errormsg))
+        ;; not really a next command
+        (let [ea (if (and (some? (:nextcmd ea)) (eos? (:nextcmd ea))) (assoc ea :nextcmd nil) ea)]
+            (:nextcmd ea)
         )
-
-        (if (and (some? (:nextcmd ea)) (eos? (:nextcmd ea)))      ;; not really a next command
-            ((ß ea =) (assoc ea :nextcmd nil))
-        )
-
-        (:nextcmd ea)
     ))
 
 ;; Append "cmd" to the error message in ioBuff.
@@ -7471,7 +7300,6 @@
 ;; Find an Ex command by its name.
 ;; Start of the name can be found at eap.cmd.
 ;; Returns pointer to char after the command name.
-;; Returns null for an ambiguous user command.
 
 (defn- #_[exarg_C Bytes] find-command [#_exarg_C eap]
     ;; Isolate the command and search for it in the command table.
@@ -7549,9 +7377,9 @@
                                         [lnum (.plus s 1)]
                                     :else
                                         ;; Only accept a mark in another file when it is used by itself: ":'M".
-                                        (let [#_pos_C p (getmark (.at s 0), (and to_other_file (eos? s 1)))]
-                                            (if (check-mark p)
-                                                [(:lnum p) (.plus s 1)]
+                                        (let [#_pos_C fp (getmark (.at s 0), (and to_other_file (eos? s 1)))]
+                                            (if (check-mark fp)
+                                                [(:lnum fp) (.plus s 1)]
                                                 [lnum nil]
                                             ))
                                     ))
@@ -7590,7 +7418,7 @@
                                                 (condp ==? (.at s 0)
                                                     (byte \&)            [RE_SUBST s]
                                                    [(byte \?) (byte \/)] [RE_SEARCH s]
-                                                    (do (emsg e_backslash) [i nil])
+                                                    (do (emsg e_backslash) [(ß i) nil])
                                                 )] (some? s) => [lnum s]
 
                                             (if skip
