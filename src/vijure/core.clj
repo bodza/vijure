@@ -14508,85 +14508,43 @@
 
 ;; "a" or "i" while an operator is pending or in Visual mode: object motion.
 
-(defn- #_cmdarg_C nv-object [#_cmdarg_C cap]
-    (§
-        ;; "ax" = an object: include white space
-        ;; "ix" = inner object: exclude white space
-        ((ß boolean include =) (!= (:cmdchar cap) (byte \i)))
-
-        ;; Make sure (), [], {} and <> are in 'matchpairs'.
-        ((ß Bytes mps_save =) @(:b_p_mps @curbuf))
-        (reset! (:b_p_mps @curbuf) (u8 "(:),{:},[:],<:>"))
-
-        (ß boolean flag)
-        ((ß SWITCH) (:nchar cap)
-            ((ß CASE) (byte \w)) ;; "aw" = a word
-            (do
-                ((ß flag =) (current-word (:oap cap), (:count1 cap), include, false))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \W)) ;; "aW" = a WORD
-            (do
-                ((ß flag =) (current-word (:oap cap), (:count1 cap), include, true))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \b)) ;; "ab" = a braces block
-            ((ß CASE) (byte \())
-            ((ß CASE) (byte \)))
-            (do
-                ((ß flag =) (current-block (:oap cap), (:count1 cap), include, (byte \(), (byte \))))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \B)) ;; "aB" = a Brackets block
-            ((ß CASE) (byte \{))
-            ((ß CASE) (byte \}))
-            (do
-                ((ß flag =) (current-block (:oap cap), (:count1 cap), include, (byte \{), (byte \})))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \[)) ;; "a[" = a [] block
-            ((ß CASE) (byte \]))
-            (do
-                ((ß flag =) (current-block (:oap cap), (:count1 cap), include, (byte \[), (byte \])))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \<)) ;; "a<" = a <> block
-            ((ß CASE) (byte \>))
-            (do
-                ((ß flag =) (current-block (:oap cap), (:count1 cap), include, (byte \<), (byte \>)))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \p)) ;; "ap" = a paragraph
-            (do
-                ((ß flag =) (current_par (:oap cap), (:count1 cap), include, (byte \p)))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \s)) ;; "as" = a sentence
-            (do
-                ((ß flag =) (current_sent (:oap cap), (:count1 cap), include))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \")) ;; "a"" = a double quoted string
-            ((ß CASE) (byte \')) ;; "a'" = a single quoted string
-            ((ß CASE) (byte \`)) ;; "a`" = a backtick quoted string
-            (do
-                ((ß flag =) (current-quote (:oap cap), (:count1 cap), include, (:nchar cap)))
-                (ß BREAK)
-            )
-            (ß DEFAULT)
-            (do
-                ((ß flag =) false)
-                (ß BREAK)
-            )
-        )
-
-        (reset! (:b_p_mps @curbuf) mps_save)
-        (if (not flag)
-            (clearopbeep (:oap cap)))
-        (adjust-cursor-col)
-        (swap! curwin assoc :w_set_curswant true)
-        nil
-    ))
+(defn- #_cmdarg_C nv-object [#_cmdarg_C cap]
+    (let [#_Bytes mps_save @(:b_p_mps @curbuf)] (reset! (:b_p_mps @curbuf) (u8 "(:),{:},[:],<:>")) ;; make sure (), [], {} and <> are in 'matchpairs'
+        ;; "ax" = an object: include white space ;; "ix" = inner object: exclude white space
+        (let [#_boolean include (!= (:cmdchar cap) (byte \i)) x (:nchar cap)
+              #_boolean flag (cond
+                (== x (byte \w)) ;; "aw" = a word
+                    (current-word (:oap cap), (:count1 cap), include, false)
+                (== x (byte \W)) ;; "aW" = a WORD
+                    (current-word (:oap cap), (:count1 cap), include, true)
+            (or (== x (byte \b)) ;; "ab" = a braces block
+                (== x (byte \())
+                (== x (byte \))))
+                    (current-block (:oap cap), (:count1 cap), include, (byte \(), (byte \)))
+            (or (== x (byte \B)) ;; "aB" = a Brackets block
+                (== x (byte \{))
+                (== x (byte \})))
+                    (current-block (:oap cap), (:count1 cap), include, (byte \{), (byte \}))
+            (or (== x (byte \[)) ;; "a[" = a [] block
+                (== x (byte \])))
+                    (current-block (:oap cap), (:count1 cap), include, (byte \[), (byte \]))
+            (or (== x (byte \<)) ;; "a<" = a <> block
+                (== x (byte \>)))
+                    (current-block (:oap cap), (:count1 cap), include, (byte \<), (byte \>))
+            (or (== x (byte \")) ;; "a"" = a double quoted string
+                (== x (byte \')) ;; "a'" = a single quoted string
+                (== x (byte \`))) ;; "a`" = a backtick quoted string
+                    (current-quote (:oap cap), (:count1 cap), include, (:nchar cap))
+                :else
+                    false
+                )]
+            (reset! (:b_p_mps @curbuf) mps_save)
+            (if (not flag)
+                (clearopbeep (:oap cap)))
+            (adjust-cursor-col)
+            (swap! curwin assoc :w_set_curswant true)
+            cap
+        )))
 
 ;; "q" command: Start/stop recording.
 ;; "q:", "q/", "q?": edit command-line in command-line window.
@@ -14662,108 +14620,63 @@
 
 ;; "P", "gP", "p" and "gp" commands.
 
-(defn- #_cmdarg_C nv-put [#_cmdarg_C cap]
-    (§
-        ((ß int regname =) 0)
-        ((ß boolean empty =) false)
-        ((ß boolean was_visual =) false)
-        ((ß int flags =) 0)
-
-        (cond (!= (:op_type (:oap cap)) OP_NOP)
-        (do
-            (clearopbeep (:oap cap))
-        )
-        :else
-        (do
-            ((ß int dir =) (if (or (== (:cmdchar cap) (byte \P)) (and (== (:cmdchar cap) (byte \g)) (== (:nchar cap) (byte \P)))) BACKWARD FORWARD))
+(defn- #_cmdarg_C nv-put [#_cmdarg_C cap]
+    (if (!= (:op_type (:oap cap)) OP_NOP)
+        (do (clearopbeep (:oap cap)) cap)
+        (let [visual? @VIsual_active]
             (prep-redo-cmd cap)
-            (if (== (:cmdchar cap) (byte \g))
-                ((ß flags =) (| flags PUT_CURSEND))
-            )
+            (let [#_int dir (if (or (== (:cmdchar cap) (byte \P)) (and (== (:cmdchar cap) (byte \g)) (== (:nchar cap) (byte \P)))) BACKWARD FORWARD)
+                  #_int flags (if (== (:cmdchar cap) (byte \g)) PUT_CURSEND 0)
+                  [cap dir flags #_int regname #_yankreg_C reg2]
+                    (if visual?
+                        ;; Putting in Visual mode: The put text replaces the selected text.
+                        ;; First delete the selected text, then put the new text.
+                        ;; Need to save and restore the registers that the delete overwrites if the old contents is being put.
+                        (let [regname (adjust-clip-reg (:regname (:oap cap)))
+                              ;; The delete is going to overwrite the register we want to put, save it first.
+                              #_yankreg_C reg1 (when (or (zero? regname) (== regname (byte \")) (asc-isdigit regname) (== regname (byte \-)))  ;; """
+                                    (get-register regname, true))
+                              ;; Now delete the selected text.
+                              cap (-> cap (assoc-in [:oap :regname] NUL)
+                                          (assoc :cmdchar (byte \d) :nchar NUL) (nv-operator) (do-pending-operator 0)
+                                          (assoc-in [:oap :regname] regname))
+                              ;; Delete probably changed the register we want to put, save it first.
+                              ;; Then put back what was there before the delete.
+                              reg2 (when (some? reg1) (let [_ (get-register regname, false)] (put-register regname, reg1) _))
+                              ;; When deleted a linewise Visual area, put the register as lines to avoid it joined with the next line.
+                              ;; When deletion was characterwise, split a line when putting lines.
+                              mode @VIsual_mode
+                              flags (| flags (cond (== mode (byte \V)) PUT_LINE (== mode (byte \v)) PUT_LINE_SPLIT :else 0)
+                                             (if (and (== mode Ctrl_V) (== dir FORWARD)) PUT_LINE_FORWARD 0))
+                              dir (if (or (and (!= mode (byte \V)) (< (:col (:w_cursor @curwin)) (:col (:b_op_start @curbuf))))
+                                          (and (== mode (byte \V)) (< (:lnum (:w_cursor @curwin)) (:lnum (:b_op_start @curbuf)))))
+                                    FORWARD ;; cursor is at the end of the line or end of file, put forward
+                                    BACKWARD)]
+                            (reset! VIsual_active true) ;; may have been reset in do-put()
+                            [cap dir flags regname reg2]
+                        )
+                        [cap dir flags 0 nil])
+                  empty? (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0)]
 
-            ((ß yankreg_C reg1 =) (ß nil, reg2 = nil))
+                (do-put (:regname (:oap cap)), dir, (:count1 cap), flags)
 
-            (when @VIsual_active
-                ;; Putting in Visual mode: The put text replaces the selected
-                ;; text.  First delete the selected text, then put the new text.
-                ;; Need to save and restore the registers that the delete
-                ;; overwrites if the old contents is being put.
-
-                ((ß was_visual =) true)
-                ((ß regname =) (:regname (:oap cap)))
-                ((ß regname =) (adjust-clip-reg regname))
-                (when (or (zero? regname) (== regname (byte \")) (asc-isdigit regname) (== regname (byte \-)))  ;; """
-                    ;; The delete is going to overwrite the register we want to put, save it first.
-                    ((ß reg1 =) (get-register regname, true))
-                )
-
-                ;; Now delete the selected text.
-                ((ß cap.cmdchar =) (byte \d))
-                ((ß cap.nchar =) NUL)
-                ((ß cap.oap.regname =) NUL)
-                ((ß cap =) (nv-operator cap))
-                ((ß cap =) (do-pending-operator cap, 0))
-                ((ß empty =) (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0))
-
-                ;; delete PUT_LINE_BACKWARD;
-                ((ß cap.oap.regname =) regname)
-
-                (when (some? reg1)
-                    ;; Delete probably changed the register we want to put, save it first.
-                    ;; Then put back what was there before the delete.
-                    ((ß reg2 =) (get-register regname, false))
-                    (put-register regname, reg1)
-                )
-
-                ;; When deleted a linewise Visual area,
-                ;; put the register as lines to avoid it joined with the next line.
-                ;; When deletion was characterwise, split a line when putting lines.
-                (cond (== @VIsual_mode (byte \V))
-                (do
-                    ((ß flags =) (| flags PUT_LINE))
-                )
-                (== @VIsual_mode (byte \v))
-                (do
-                    ((ß flags =) (| flags PUT_LINE_SPLIT))
-                ))
-                (if (and (== @VIsual_mode Ctrl_V) (== dir FORWARD))
-                    ((ß flags =) (| flags PUT_LINE_FORWARD))
-                )
-                ((ß dir =) BACKWARD)
-                (when (or (and (!= @VIsual_mode (byte \V)) (< (:col (:w_cursor @curwin)) (:col (:b_op_start @curbuf)))) (and (== @VIsual_mode (byte \V)) (< (:lnum (:w_cursor @curwin)) (:lnum (:b_op_start @curbuf)))))
-                    ;; cursor is at the end of the line or end of file, put forward.
-                    ((ß dir =) FORWARD)
-                )
-                ;; May have been reset in do-put().
-                (reset! VIsual_active true)
-            )
-
-            (do-put (:regname (:oap cap)), dir, (int (:count1 cap)), flags)
-
-            ;; If a register was saved, put it back now.
-            (if (some? reg2)
-                (put-register regname, reg2))
-
-            ;; What to reselect with "gv"?
-            ;; Selecting the just put text seems to be the most useful, since the original was removed.
-            (when was_visual
-                (swap! curbuf assoc-in [:b_visual :vi_start] (:b_op_start @curbuf))
-                (swap! curbuf assoc-in [:b_visual :vi_end] (:b_op_end @curbuf))
-            )
-
-            ;; When all lines were selected and deleted do-put() leaves
-            ;; an empty line that needs to be deleted now.
-            (when (and empty (eos? (ml-get (:ml_line_count (:b_ml @curbuf)))))
-                (ml-delete (:ml_line_count (:b_ml @curbuf)), true)
-
-                ;; If the cursor was in that line, move it to the end of the last line.
-                (when (> (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
-                    (swap! curwin assoc-in [:w_cursor :lnum] (:ml_line_count (:b_ml @curbuf)))
-                    (coladvance MAXCOL)
-                )
-            )
-        ))
-        nil
+                ;; If a register was saved, put it back now.
+                (if (some? reg2)
+                    (put-register regname, reg2))
+                ;; What to reselect with "gv"?
+                ;; Selecting the just put text seems to be the most useful, since the original was removed.
+                (if visual?
+                    (swap! curbuf update :b_visual assoc :vi_start (:b_op_start @curbuf) :vi_end (:b_op_end @curbuf)))
+                ;; When all lines were selected and deleted do-put() leaves an empty line that needs to be deleted now.
+                (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (and empty? (eos? (ml-get lmax)))
+                    (ml-delete lmax, true)
+                    ;; If the cursor was in that line, move it to the end of the last line.
+                    (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (< lmax (:lnum (:w_cursor @curwin)))
+                        (swap! curwin assoc-in [:w_cursor :lnum] lmax)
+                        (coladvance MAXCOL)
+                    ))
+                cap
+            ))
     ))
 
 ;; "o" and "O" commands.
