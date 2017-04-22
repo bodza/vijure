@@ -21541,7 +21541,7 @@
 ;; Recursively call nfa-regmatch().
 ;; "pim" is null or contains info about a Postponed Invisible Match (start position).
 
-(defn- #_[window_C nfa_pattern_C int] recursive-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C' a'subs, #_regsubs_C' a'msubs]
+(defn- #_[window_C int] recursive-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C' a'subs, #_regsubs_C' a'msubs]
     (let [o'reglnum @reglnum o'reginput_col (BDIFF @reginput, @regline) o'nfa_listid @nfa_listid o'nfa_endp @nfa_endp]
         (when (some? pim) ;; start at the position where the postponed match was
             (reset! reginput (.plus @regline (:col (:np_end_pos pim)))))
@@ -21584,7 +21584,7 @@
             (reset! reginput (.plus @regline o'reginput_col))
             (reset! nfa_listid o'nfa_listid)
             (reset! nfa_endp o'nfa_endp)
-            [win pat ?])
+            [win ?])
     ))
 
 ;; Estimate the chance of a match with "state" failing.
@@ -21768,9 +21768,9 @@
 
                             (let-when [#_int curc (us-ptr2char @reginput)
                                   a'clen (atom (int (if (== curc NUL) (do (reset! a'go_to_nextline false) 0) (us-ptr2len-cc @reginput))))
-                                  [win ?]
-                                    (let-when [[win ?] ;; compute "ls1"
-                                            (loop-when [#_int i 0] (< i (count (:nl_threads ls0))) => [win nil]
+                                  [win ls0 ls1 ?]
+                                    (let-when [[win ls0 ls1 ?] ;; compute "ls1"
+                                            (loop-when [ls0 ls0 ls1 ls1 #_int i 0] (< i (count (:nl_threads ls0))) => [win ls0 ls1 nil]
                                                 (let-when [#_nfa_thread_C t (... (:nl_threads ls0) i)
                                                       ;; Handle the possible codes of the current state.  The most important is NFA_MATCH.
                                                       m { #_nfa_state_C :add_state nil #_boolean :add_here false #_int :add_off 0 #_int :add_count 0 }
@@ -21823,10 +21823,10 @@
                                                             NFA_START_INVISIBLE_BEFORE_NEG_FIRST]
                                                                 (cond (or (some? (:th_pim t)) (pim-first? (:c (:th_state t))))
                                                                     ;; Do it directly if there already is a PIM or when nfa-postprocess() detected it will work better.
-                                                                    (let [o'in_use (:in_use @a'subs)]
-                                                                        (swap! a'subs copy-sub-off (:th_subs t))
-                                                                        ;; First try matching the invisible match, then what follows.
-                                                                        ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, a'subs, a'msubs))
+                                                                    (let [o'in_use (:in_use @a'subs)
+                                                                          _ (swap! a'subs copy-sub-off (:th_subs t))
+                                                                          ;; First try matching the invisible match, then what follows.
+                                                                          [win #_int ?] (recursive-regmatch? win, pat, (:th_state t), nil, a'subs, a'msubs)]
                                                                         (when' (!= ? NFA_TOO_EXPENSIVE) => (do (reset! a'match ?) [win m :return])
                                                                             ;; For \@! and \@<! it is a match when the result is false.
                                                                             (let [m (when' (!= (!= ? FALSE) (pim-neg? (:c (:th_state t)))) => m
@@ -21862,7 +21862,7 @@
                                                                 ] (nil? skip) => [win m nil]
 
                                                                     (let [_ (swap! a'subs copy-sub-off t'subs)
-                                                                          _ ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, t'state, nil, a'subs, a'msubs))]
+                                                                          [win #_int ?] (recursive-regmatch? win, pat, t'state, nil, a'subs, a'msubs)]
                                                                         (condp == ? NFA_TOO_EXPENSIVE (do (reset! a'match ?) [win m :return]) FALSE [win m nil]
                                                                             (let [_ ((ß t =) (update t :th_subs copy-sub-off @a'subs))
                                                                                   ;; Now we need to skip over the matched text and then continue with what follows.
@@ -22204,17 +22204,17 @@
                                                                     (reset! a'clen (utf-char2len curc)))
                                                                 [win (if ? (assoc m :add_state (-> (:th_state t) (out0)) :add_off @a'clen) m) nil])
 
-                                                        )] (not ?) => [win ?]
+                                                        )] (not ?) => [win ls0 ls1 ?]
 
-                                                    (let [win
-                                                            (when' (some? (:add_state m)) => win
+                                                    (let [[win ls0 ls1 i]
+                                                            (when' (some? (:add_state m)) => [win ls0 ls1 i]
                                                                 (let-when [#_nfa_pim_C pim (:th_pim t)
                                                                       ;; Handle the PIM if the match might end without advancing and before the end of the line.
                                                                       [win pim ?]
                                                                         (when' (and (some? pim) (or (zero? @a'clen) (match-follows (:add_state m), 0))) => [win pim nil]
                                                                             (let [[win pim #_int ?]
                                                                                     (when' (== (:np_result pim) NFA_PIM_TODO) => [win pim (if (== (:np_result pim) NFA_PIM_MATCH) TRUE FALSE)]
-                                                                                        (let [_ ((ß [win pat ?] =) (recursive-regmatch? win, pat, (:np_state pim), pim, a'subs, a'msubs))
+                                                                                        (let [[win ?] (recursive-regmatch? win, pat, (:np_state pim), pim, a'subs, a'msubs)
                                                                                               pim (assoc pim :np_result (if (!= ? FALSE) NFA_PIM_MATCH NFA_PIM_NOMATCH))
                                                                                               ;; For \@! and \@<! it is a match when the result is false.
                                                                                               pim (when' (!= (!= ? FALSE) (pim-neg? (:c (:np_state pim)))) => pim
@@ -22224,26 +22224,27 @@
                                                                                     )]
                                                                                 ;; For \@! and \@<! it is a match when the result is false.
                                                                                 (if (!= (!= ? FALSE) (pim-neg? (:c (:np_state pim))))
-                                                                                    (do ((ß (:th_subs t) =) (copy-sub-off (:th_subs t), (:np_subs pim)))
+                                                                                    (let [_ ((ß t =) (update t :th_subs copy-sub-off (:np_subs pim)))]
                                                                                         ;; PIM was handled, don't add it to the following states.
                                                                                         [win nil nil])
                                                                                     (do ;; Look-behind match failed, don't add the state.
                                                                                         [win nil :recur])
                                                                                 ))
-                                                                        )] (not ?) => win
+                                                                        )] (not ?) => [win ls0 ls1 i]
 
                                                                     (if (:add_here m)
-                                                                        (do ((ß [ls0 i] =) (addstate-here ls0, (:add_state m), (:th_subs t), pim, i))
-                                                                            win)
-                                                                        (do ((ß ls1 =) (addstate ls1, (:add_state m), (:th_subs t), pim, (:add_off m)))
-                                                                            (when (< 0 (:add_count m))
-                                                                                ((ß ls1 =) (assoc-in ls1 [:nl_threads (dec (count (:nl_threads ls1))) :th_count] (:add_count m))))
-                                                                            win)
+                                                                        (let [[ls0 i] (addstate-here ls0, (:add_state m), (:th_subs t), pim, i)]
+                                                                            [win ls0 ls1 i])
+                                                                        (let [ls1 (addstate ls1, (:add_state m), (:th_subs t), pim, (:add_off m))
+                                                                              ls1 (when' (< 0 (:add_count m)) => ls1
+                                                                                    (assoc-in ls1 [:nl_threads (dec (count (:nl_threads ls1))) :th_count] (:add_count m))
+                                                                                )]
+                                                                            [win ls0 ls1 i])
                                                                     ))
                                                             )]
-                                                        (recur (inc i))
+                                                        (recur ls0 ls1 (inc i))
                                                     ))
-                                            )] (not ?) => [win (when (== ? :return) ?)]
+                                            )] (not ?) => [win ls0 ls1 (when (== ? :return) ?)]
 
                                         ;; Look for the start of a match in the current position by adding the start state to the list of states.
                                         ;; The first found match is the leftmost one, thus the order of states matters!  Do not add the start state
@@ -22253,7 +22254,7 @@
                                                     (or (and toplevel (== @reglnum 0) (non-zero? @a'clen) (or (== @ireg_maxcol 0) (< (BDIFF @reginput, @regline) @ireg_maxcol)))
                                                         (and (some? @nfa_endp)
                                                              (or (< @reglnum (:lnum @nfa_endp))
-                                                                 (and (== @reglnum (:lnum @nfa_endp)) (< (BDIFF @reginput, @regline) (:col @nfa_endp))))))) => [win nil]
+                                                                 (and (== @reglnum (:lnum @nfa_endp)) (< (BDIFF @reginput, @regline) (:col @nfa_endp))))))) => [win ls0 ls1 nil]
                                             ;; Inline optimized code for addstate() if we know the state is the first MOPEN.
                                             (cond toplevel
                                                 (let-when [#_boolean add?
@@ -22271,16 +22272,14 @@
                                                                 (let [#_int c (us-ptr2char @reginput, @a'clen)]
                                                                     (or (== c (:regstart pat)) (and @ireg_icase (== (utf-tolower c) (utf-tolower (:regstart pat)))))
                                                                 ))
-                                                        )] (some? add?) => [win :return]
+                                                        )] (some? add?) => [win ls0 ls1 :return]
 
-                                                    (when' add? => [win nil]
+                                                    (when' add? => [win ls0 ls1 nil]
                                                         (let [_ (swap! a'subs assoc-in [:rs_start 0 :col] (+ (BDIFF @reginput, @regline) @a'clen))]
-                                                            ((ß ls1 =) (addstate ls1, (out0 start), @a'subs, nil, @a'clen))
-                                                            [win nil])
+                                                            [win ls0 (addstate ls1, (out0 start), @a'subs, nil, @a'clen) nil])
                                                     ))
                                             :else
-                                                (do ((ß ls1 =) (addstate ls1, start, @a'subs, nil, @a'clen))
-                                                    [win nil])
+                                                [win ls0 (addstate ls1, start, @a'subs, nil, @a'clen) nil]
                                             ))
                                     )] (not ?) => [win @a'match]
 
