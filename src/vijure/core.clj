@@ -26778,214 +26778,134 @@
 
 ;; Find quote under the cursor, cursor at end.
 ;; Returns true if found, else false.
+;;
+;; include: true == include quote char
+;; q: quote character
 
-(defn- #_[window_C cmdarg_C boolean] current-quote? [#_window_C win, #_cmdarg_C cap, #_long count, #_boolean include, #_int quotechar]
-    ;; include: true == include quote char
-    ;; quotechar: Quote character
-    (§
-        ((ß Bytes line =) (ml-get (:lnum (:w_cursor win))))
-        (ß int col_end)
-        ((ß int col_start =) (:col (:w_cursor win)))
-
-        ((ß boolean inclusive =) false)
-        ((ß boolean vis_empty =) true)           ;; Visual selection <= 1 char
-        ((ß boolean vis_bef_curs =) false)       ;; Visual starts before cursor
-        ((ß boolean inside_quotes =) false)      ;; Looks like "i'" done before
-        ((ß boolean selected_quote =) false)     ;; Has quote inside selection
-
-        ;; Correct cursor when 'selection' is exclusive.
-        (when @VIsual_active
-            ((ß vis_bef_curs =) (ltpos @VIsual_cursor, (:w_cursor win)))
-            (when (and (at? @p_sel (byte \e)) vis_bef_curs)
-                (swap! curwin dec-cursor false))
-            ((ß vis_empty =) (eqpos @VIsual_cursor, (:w_cursor win)))
-        )
-
-        (when (not vis_empty)
-            (ß int i)
-            ;; Check if the existing selection exactly spans the text inside quotes.
-            (cond vis_bef_curs
-            (do
-                ((ß inside_quotes =) (and (< 0 (:col @VIsual_cursor)) (and (at? line (dec (:col @VIsual_cursor)) quotechar) (non-eos? line (:col (:w_cursor win))) (at? line (inc (:col (:w_cursor win))) quotechar))))
-                ((ß i =) (:col @VIsual_cursor))
-                ((ß col_end =) (:col (:w_cursor win)))
-            )
+(defn- #_[window_C cmdarg_C boolean] current-quote? [#_window_C win, #_cmdarg_C cap, #_long count, #_boolean include, #_int q]
+    (let-when [#_Bytes line (ml-get (:lnum (:w_cursor win))) #_int start (:col (:w_cursor win))
+          ;; Correct cursor when 'selection' is exclusive.
+          [win #_boolean vis_empty #_boolean vis_bef_curs] ;; Visual selection <= 1 char.  ;; Visual starts before cursor.
+            (if @VIsual_active
+                (let [vis_bef_curs (ltpos @VIsual_cursor, (:w_cursor win))
+                      win (if (and (at? @p_sel (byte \e)) vis_bef_curs) (dec-cursor win, false) win)]
+                    [win (eqpos @VIsual_cursor, (:w_cursor win)) vis_bef_curs])
+                [win true false])
+          [#_boolean inside_quotes #_boolean selected_quote] ;; Looks like "i'" done before.  ;; Has quote inside selection.
+            (if (not vis_empty)
+                ;; Check if the existing selection exactly spans the text inside quotes.
+                (let [cuc (:col (:w_cursor win)) vic (:col @VIsual_cursor)
+                      [inside_quotes #_int i #_int e]
+                        (if vis_bef_curs
+                            [(and (< 0 vic) (at? line (dec vic) q) (non-eos? line cuc) (at? line (inc cuc) q)) vic cuc]
+                            [(and (< 0 cuc) (at? line (dec cuc) q) (non-eos? line vic) (at? line (inc vic) q)) cuc vic])
+                      ;; Find out if we have a quote in the selection.
+                      selected_quote
+                        (loop-when i (<= i e) => false
+                            (recur-if (not-at? line i q) (inc i) => true)
+                        )]
+                    [inside_quotes selected_quote])
+                [false false])
+          qe @(:b_p_qe @curbuf)
+          [start #_int end :as _]
+            (cond (and (not vis_empty) (at? line start q))
+                ;; Already selecting something and on a quote character.
+                ;; Find the next quoted string.
+                (cond vis_bef_curs
+                    ;; Assume we are on a closing quote: move to after the next opening quote.
+                    (let-when [start (find-next-quote line, (inc start), q, nil)] (<= 0 start) => nil
+                        (let [end (find-next-quote line, (inc start), q, qe)]
+                            ;; We were on a starting quote perhaps?
+                            (if (<= 0 end) [start end] [(:col (:w_cursor win)) start])
+                        ))
+                :else
+                    (let-when [end (find-prev-quote line, start, q, nil)] (at? line end q) => nil
+                        (let [start (find-prev-quote line, end, q, qe)]
+                            ;; We were on an ending quote perhaps?
+                            (if (at? line start q) [start end] [end (:col (:w_cursor win))])
+                        ))
+                )
+            (or (at? line start q) (not vis_empty))
+                (let [#_int first
+                        (if (not vis_empty)
+                            (if vis_bef_curs
+                                (find-next-quote line, start, q, nil)
+                                (find-prev-quote line, start, q, nil))
+                            start
+                        )]
+                    ;; The cursor is on a quote, we don't know if it's the opening or closing quote.
+                    ;; Search from the start of the line to find out.
+                    ;; Also do this when there is a Visual area, a' may leave the cursor in between two strings.
+                    (loop [start 0 end nil]
+                        ;; Find open quote character.
+                        (let-when [start (find-next-quote line, start, q, nil)] (<= 0 start first) => nil
+                            ;; Find close quote character.
+                            (let-when [end (find-next-quote line, (inc start), q, qe)] (<= 0 end) => nil
+                                ;; If cursor is between start and end quote, it is target text.
+                                (if (<= start first end) [start end] (recur (inc end) end))
+                            ))
+                    ))
             :else
-            (do
-                ((ß inside_quotes =) (and (< 0 (:col (:w_cursor win))) (and (at? line (dec (:col (:w_cursor win))) quotechar) (non-eos? line (:col @VIsual_cursor)) (at? line (inc (:col @VIsual_cursor)) quotechar))))
-                ((ß i =) (:col (:w_cursor win)))
-                ((ß col_end =) (:col @VIsual_cursor))
-            ))
+                ;; Search backward for a starting quote.
+                (let-when [start (find-prev-quote line, start, q, qe)
+                      start
+                        (if (not-at? line start q)
+                            ;; No quote before the cursor, look after the cursor.
+                            (let-when [start (find-next-quote line, start, q, nil)] (<= 0 start) => nil
+                                start)
+                            start
+                        )] (some? start) => nil
 
-            ;; Find out if we have a quote in the selection.
-            (loop-when [] (<= i col_end)
-                (when (at? line (ß i++) quotechar)
-                    ((ß selected_quote =) true)
-                    (ß BREAK)
-                )
-                (recur)
-            )
-        )
-
-        (cond (and (not vis_empty) (at? line col_start quotechar))
-        (do
-            ;; Already selecting something and on a quote character.
-            ;; Find the next quoted string.
-            (cond vis_bef_curs
-            (do
-                ;; Assume we are on a closing quote: move to after the next opening quote.
-                ((ß col_start =) (find-next-quote line, (inc col_start), quotechar, nil))
-                (if (< col_start 0)
-                    ((ß RETURN) [win cap false])
-                )
-                ((ß col_end =) (find-next-quote line, (inc col_start), quotechar, @(:b_p_qe @curbuf)))
-                (when (< col_end 0)
-                    ;; We were on a starting quote perhaps?
-                    ((ß col_end =) col_start)
-                    ((ß col_start =) (:col (:w_cursor win)))
-                )
-            )
-            :else
-            (do
-                ((ß col_end =) (find-prev-quote line, col_start, quotechar, nil))
-                (if (not-at? line col_end quotechar)
-                    ((ß RETURN) [win cap false])
-                )
-                ((ß col_start =) (find-prev-quote line, col_end, quotechar, @(:b_p_qe @curbuf)))
-                (when (not-at? line col_start quotechar)
-                    ;; We were on an ending quote perhaps?
-                    ((ß col_start =) col_end)
-                    ((ß col_end =) (:col (:w_cursor win)))
-                )
-            ))
-        )
-        (or (at? line col_start quotechar) (not vis_empty))
-        (do
-            ((ß int first_col =) col_start)
-
-            (when (not vis_empty)
-                ((ß first_col =) (if vis_bef_curs
-                    (find-next-quote line, col_start, quotechar, nil)
-                    (find-prev-quote line, col_start, quotechar, nil)
+                    ;; Find close quote character.
+                    (let-when [end (find-next-quote line, (inc start), q, qe)] (<= 0 end) => nil
+                        [start end])
                 ))
-            )
+    ] (some? _) => [win cap false]
 
-            ;; The cursor is on a quote, we don't know if it's the opening or
-            ;; closing quote.  Search from the start of the line to find out.
-            ;; Also do this when there is a Visual area, a' may leave the cursor
-            ;; in between two strings.
-            ((ß col_start =) 0)
-            (loop []
-                ;; Find open quote character.
-                ((ß col_start =) (find-next-quote line, col_start, quotechar, nil))
-                (if (or (< col_start 0) (< first_col col_start))
-                    ((ß RETURN) [win cap false])
-                )
-                ;; Find close quote character.
-                ((ß col_end =) (find-next-quote line, (inc col_start), quotechar, @(:b_p_qe @curbuf)))
-                (if (< col_end 0)
-                    ((ß RETURN) [win cap false])
-                )
-                ;; If is cursor between start and end quote character,
-                ;; it is target text object.
-                (if (<= col_start first_col col_end)
-                    (ß BREAK)
-                )
-                ((ß col_start =) (inc col_end))
-                (recur)
-            )
-        )
-        :else
-        (do
-            ;; Search backward for a starting quote.
-            ((ß col_start =) (find-prev-quote line, col_start, quotechar, @(:b_p_qe @curbuf)))
-            (when (not-at? line col_start quotechar)
-                ;; No quote before the cursor, look after the cursor.
-                ((ß col_start =) (find-next-quote line, col_start, quotechar, nil))
-                (if (< col_start 0)
-                    ((ß RETURN) [win cap false])
-                )
-            )
-
-            ;; Find close quote character.
-            ((ß col_end =) (find-next-quote line, (inc col_start), quotechar, @(:b_p_qe @curbuf)))
-            (if (< col_end 0)
-                ((ß RETURN) [win cap false])
-            )
-        ))
-
-        ;; When "include" is true,
-        ;; include spaces after closing quote or before the starting quote.
-        (when include
-            (cond (vim-iswhite (.at line (inc col_end)))
-            (do
-                (loop-when [] (vim-iswhite (.at line (inc col_end)))
-                    ((ß col_end =) (inc col_end))
-                    (recur)
-                )
-            )
-            :else
-            (do
-                (loop-when [] (and (< 0 col_start) (vim-iswhite (.at line (dec col_start))))
-                    ((ß col_start =) (dec col_start))
-                    (recur)
-                )
+        ;; When "include" is true, include spaces after closing quote or before the starting quote.
+        (let [[start end]
+                (cond (not include)
+                    [start end]
+                (vim-iswhite (.at line (inc end)))
+                    [start (loop-when-recur end (vim-iswhite (.at line (inc end))) (inc end) => end)]
+                :else
+                    [(loop-when-recur start (and (< 0 start) (vim-iswhite (.at line (dec start)))) (dec start) => start) end])
+              ;; Set start position.  After vi" another i" must include the ".
+              ;; For v2i" include the quotes.
+              start (if (and (not include) (< count 2) (or vis_empty (not inside_quotes))) (inc start) start)
+              win (assoc-in win [:w_cursor :col] start)
+              cap (if @VIsual_active
+                    ;; Set the start of the Visual area when it was empty, we were just inside quotes,
+                    ;; or the Visual area didn't start at a quote and didn't include a quote.
+                    (do (let-when [vic (:col @VIsual_cursor)]
+                                  (or vis_empty (and vis_bef_curs (not selected_quote) (or inside_quotes (and (not-at? line vic q) (or (zero? vic) (not-at? line (dec vic) q))))))
+                            (reset! VIsual_cursor (:w_cursor win))
+                            (redraw-curbuf-later INVERTED))
+                        cap)
+                    (update cap :oap assoc :op_start (:w_cursor win) :motion_type MCHAR))
+              ;; Set end position.
+              win (assoc-in win [:w_cursor :col] end)
+              ;; After vi" another i" must include the ".
+              [win #_boolean inclusive] (if (or include (< 1 count) (and (not vis_empty) inside_quotes)) (let [[win ?] (inc-cursor? win, false)] [win (== ? 2)]) [win false])]
+            (if @VIsual_active
+                (let [win (if (or vis_empty vis_bef_curs)
+                            ;; Decrement cursor when 'selection' is not exclusive.
+                            (if (not-at? @p_sel (byte \e)) (dec-cursor win, false) win)
+                            ;; Cursor is at start of Visual area.
+                            ;; Set the end of the Visual area when it was just inside quotes or it didn't end at a quote.
+                            (let [vic (:col @VIsual_cursor)
+                                  win (if (or inside_quotes (and (not selected_quote) (not-at? line vic q) (or (eos? line vic) (not-at? line (inc vic) q))))
+                                        (let [win (dec-cursor win, false)] (reset! VIsual_cursor (:w_cursor win)) win)
+                                        win
+                                    )]
+                                (assoc-in win [:w_cursor :col] start))
+                        )]
+                    (when (== @VIsual_mode (byte \V))
+                        (reset! VIsual_mode (byte \v))
+                        (reset! redraw_cmdline true)) ;; show mode later
+                    [win cap true])
+                [win (update cap :oap assoc :inclusive inclusive) true]
             ))
-        )
-
-        ;; Set start position.  After vi" another i" must include the ".
-        ;; For v2i" include the quotes.
-        ((ß col_start =) (if (and (not include) (< count 2) (or vis_empty (not inside_quotes))) (inc col_start) col_start))
-        (swap! curwin assoc-in [:w_cursor :col] col_start)
-        (cond @VIsual_active
-        (do
-            ;; Set the start of the Visual area when the Visual area was empty, we
-            ;; were just inside quotes or the Visual area didn't start at a quote
-            ;; and didn't include a quote.
-
-            (when (or vis_empty (and vis_bef_curs (not selected_quote) (or inside_quotes (and (not-at? line (:col @VIsual_cursor) quotechar) (or (zero? (:col @VIsual_cursor)) (not-at? line (dec (:col @VIsual_cursor)) quotechar))))))
-                (reset! VIsual_cursor (:w_cursor win))
-                (redraw-curbuf-later INVERTED)
-            )
-        )
-        :else
-        (do
-            ((ß cap =) (update cap :oap assoc :op_start (:w_cursor win) :motion_type MCHAR))
-        ))
-
-        ;; Set end position.
-        (swap! curwin assoc-in [:w_cursor :col] col_end)
-        ;; After vi" another i" must include the ".
-        ((ß inclusive =) (or (and (or include (< 1 count) (and (not vis_empty) inside_quotes)) (== (let [[_ ?] (inc-cursor? win, false)] (reset! curwin _) ?) 2)) inclusive))
-        (cond @VIsual_active
-        (do
-            (cond (or vis_empty vis_bef_curs)
-            (do
-                ;; decrement cursor when 'selection' is not exclusive
-                (when (not-at? @p_sel (byte \e))
-                    (swap! curwin dec-cursor false))
-            )
-            :else
-            (do
-                ;; Cursor is at start of Visual area.  Set the end of the Visual area
-                ;; when it was just inside quotes or it didn't end at a quote.
-                (when (or inside_quotes (and (not selected_quote) (not-at? line (:col @VIsual_cursor) quotechar) (or (at? line (:col @VIsual_cursor) NUL) (not-at? line (inc (:col @VIsual_cursor)) quotechar))))
-                    (swap! curwin dec-cursor false)
-                    (reset! VIsual_cursor (:w_cursor win))
-                )
-                (swap! curwin assoc-in [:w_cursor :col] col_start)
-            ))
-            (when (== @VIsual_mode (byte \V))
-                (reset! VIsual_mode (byte \v))
-                (reset! redraw_cmdline true)              ;; show mode later
-            )
-        )
-        :else
-        (do
-            ((ß cap =) (update cap :oap assoc :inclusive inclusive))
-        ))
-
-        [win cap true]
     ))
 
 ;; Find next search match under cursor, cursor at end.
