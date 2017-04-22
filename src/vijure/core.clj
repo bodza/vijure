@@ -19319,40 +19319,7 @@
         (vim-strchr s, c)
     ))
 
-;; regsub stuff
-
-;; We should define ftpr as a pointer to a function returning
-;; a pointer to a function returning a pointer to a function ...
-;; This is impossible, so we declare a pointer to a function
-;; returning a pointer to a function returning void.
-
-(ß
-;   static abstract class fptr_C
-    (ß
-;       public abstract fptr_C flip(int[] d, int c);
-    ))
-
-;   static final fptr_C do_upper = new fptr_C()
-;   {
-;       public fptr_C flip(int[] d, int c) { d[0] = utf-toupper(c); return null; }
-;   };
-
-;   static final fptr_C do_Upper = new fptr_C()
-;   {
-;       public fptr_C flip(int[] d, int c) { d[0] = utf-toupper(c); return this; }
-;   };
-
-;   static final fptr_C do_lower = new fptr_C()
-;   {
-;       public fptr_C flip(int[] d, int c) { d[0] = utf-tolower(c); return null; }
-;   };
-
-;   static final fptr_C do_Lower = new fptr_C()
-;   {
-;       public fptr_C flip(int[] d, int c) { d[0] = utf-tolower(c); return this; }
-;   };
-
-;; regtilde(): Replace tildes in the pattern by the old pattern.
+;; Replace tildes in the pattern by the old pattern.
 ;;
 ;; Short explanation of the tilde: It stands for the previous replacement pattern.
 ;; If that previous pattern also contains a ~ we should go back a step further...
@@ -19443,269 +19410,123 @@
     ))
 
 (defn- #_[window_C int] lit-regsub- [#_window_C win, #_Bytes source, #_Bytes dest, #_boolean copy, #_boolean magic, #_boolean backslash]
-    (§
-        ((ß fptr_C func_one =) nil)
-        ((ß fptr_C func_all =) nil)
-
-        ((ß int no =) -1)
-        ((ß long clnum =) 0)
-        ((ß int len =) 0)
-
-        ((ß Bytes src =) source)
-        ((ß Bytes dst =) dest)
-
-        (loop-when-recur [#_byte b (.at src 0) src (.plus src 1)] (!= b NUL) [(.at src 0) (.plus src 1)]
-            (cond (and (== b (byte \&)) magic)
-            (do
-                ((ß no =) 0)
-            )
-            (and (== b (byte \\)) (non-eos? src))
-            (do
-                (cond (and (at? src (byte \&)) (not magic))
-                (do
-                    ((ß src =) (.plus src 1))
-                    ((ß no =) 0)
-                )
-                (and (<= (byte \0) (.at src 0)) (<= (.at src 0) (byte \9)))
-                (do
-                    ((ß no =) (- (.at ((ß src =) (.plus src 1)) -1) (byte \0)))
-                )
-                (some? (vim-strbyte (u8 "uUlLeE"), (.at src 0)))
-                (do
-                    (condp ==? (.at ((ß src =) (.plus src 1)) -1)
-                        (byte \u)
-                        (do
-                            ((ß func_one =) do_upper)
-                            (ß CONTINUE)
-                        )
-                        (byte \U)
-                        (do
-                            ((ß func_all =) do_Upper)
-                            (ß CONTINUE)
-                        )
-                        (byte \l)
-                        (do
-                            ((ß func_one =) do_lower)
-                            (ß CONTINUE)
-                        )
-                        (byte \L)
-                        (do
-                            ((ß func_all =) do_Lower)
-                            (ß CONTINUE)
-                        )
-                    [(byte \e) (byte \E)]
-                        (do
-                            ((ß func_one =) nil)
-                            ((ß func_all =) nil)
-                            (ß CONTINUE)
-                        )
-                    )
-                ))
-            ))
-            (cond (< no 0)             ;; Ordinary character.
-            (do
-                (when (and (== b KB_SPECIAL) (non-eos? src) (non-eos? src 1))
-                    ;; Copy a special key as-is.
-                    (cond copy
-                    (do
-                        (.be ((ß dst =) (.plus dst 1)) -1, b)
-                        (.be ((ß dst =) (.plus dst 1)) -1, (.at ((ß src =) (.plus src 1)) -1))
-                        (.be ((ß dst =) (.plus dst 1)) -1, (.at ((ß src =) (.plus src 1)) -1))
-                    )
-                    :else
-                    (do
-                        ((ß dst =) (.plus dst 3))
-                        ((ß src =) (.plus src 2))
-                    ))
-                    (ß CONTINUE)
-                )
-
-                (ß int c)
-                (cond (and (== b (byte \\)) (non-eos? src))
-                (do
-                    ;; Check for abbreviations.
-                    (condp == (.at src 0)
-                        (byte \r)
-                        (do
-                            ((ß b =) CAR)
-                            ((ß src =) (.plus src 1))
-                            (ß BREAK)
-                        )
-                        (byte \n)
-                        (do
-                            ((ß b =) NL)
-                            ((ß src =) (.plus src 1))
-                            (ß BREAK)
-                        )
-                        (byte \t)
-                        (do
-                            ((ß b =) TAB)
-                            ((ß src =) (.plus src 1))
-                            (ß BREAK)
-                        )
-                    ;; case (byte \e):     ;; Oh no!  \e already has meaning in subst pat.
-                    ;; {
-                    ;;     b = ESC;
-                    ;;     src = src.plus(1);
-                    ;;     break;
-                    ;; }
-                        (byte \b)
-                        (do
-                            ((ß b =) Ctrl_H)
-                            ((ß src =) (.plus src 1))
-                            (ß BREAK)
-                        )
-
-                        ;; If "backslash" is true the backslash will be removed later.
-                        ;; Used to insert a literal CR.
-                        (do
-                            (when backslash
-                                (if copy
-                                    (.be dst 0, (byte \\))
-                                )
-                                ((ß dst =) (.plus dst 1))
-                            )
-                            ((ß b =) (.at ((ß src =) (.plus src 1)) -1))
-                            (ß BREAK)
-                        )
-                    )
-                    ((ß c =) (char_u b))
-                )
-                :else
-                (do
-                    ((ß c =) (us-ptr2char src, -1))
-                ))
-
-                ;; Write to buffer, if copy is set.
-                ((ß int[] a'cc =) (atom (int)))
-                (cond (some? func_one)
-                (do
-                    ((ß func_one =) (.flip func_one a'cc, c))
-                )
-                (some? func_all)
-                (do
-                    ((ß func_all =) (.flip func_all a'cc, c))
-                )
-                :else ;; just copy
-                (do
-                    (reset! a'cc c)
-                ))
-
-                ((ß int totlen =) (us-ptr2len-cc src, -1))
-
-                (if copy
-                    (utf-char2bytes @a'cc, dst))
-                ((ß dst =) (.plus dst (dec (utf-char2len @a'cc))))
-
-                ((ß int clen =) (us-ptr2len src, -1))
-
-                ;; If the character length is shorter than "totlen",
-                ;; there are composing characters; copy them as-is.
-                (when (< clen totlen)
-                    (if copy
-                        (BCOPY dst, 1, src, (+ -1 clen), (- totlen clen)))
-                    ((ß dst =) (.plus dst (- totlen clen)))
-                )
-
-                ((ß src =) (.plus src (dec totlen)))
-                ((ß dst =) (.plus dst 1))
-            )
-            :else
-            (do
-                ((ß clnum =) (:lnum (... (:m_startpos @reg_match) no)))
-                (ß Bytes s)
-                (cond (or (< clnum 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
-                (do
-                    ((ß s =) nil)
-                )
-                :else
-                (do
-                    ((ß s =) (.plus (reg-getline clnum) (:col (... (:m_startpos @reg_match) no))))
-                    ((ß len =) (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
-                        (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no)))
-                        (STRLEN s)
-                    ))
-                ))
-                (when (some? s)
-                    (loop []
-                        (cond (zero? len)
-                        (do
-                            (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
-                                (ß BREAK)
-                            )
-                            (if copy
-                                (.be dst 0, CAR)
-                            )
-                            ((ß dst =) (.plus dst 1))
-                            ((ß s =) (reg-getline ((ß clnum =) (inc clnum))))
-                            ((ß len =) (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
-                                (:col (... (:m_endpos @reg_match) no))
-                                (STRLEN s)
-                            ))
-                        )
-                        (eos? s)
-                        (do
-                            (when copy
-                                (emsg e_re_damg))
-                            ((ß RETURN) [win (inc (BDIFF dst, dest))])
-                        )
-                        :else
-                        (do
-                            (cond (and backslash (or (at? s CAR) (at? s (byte \\))))
-                            (do
-                                ;; Insert a backslash in front of a CR,
-                                ;; otherwise it will be replaced by a line break.
-                                ;; Number of backslashes will be halved later, double them here.
-
-                                (when copy
-                                    (.be dst 0, (byte \\))
-                                    (.be dst 1, (.at s 0))
-                                )
-                                ((ß dst =) (.plus dst 2))
-                            )
+    (let [f'one (atom (#_fn object nil)) f'all (atom (#_fn object nil))
+          #_Bytes s source [win #_Bytes d]
+            (loop-when [#_byte b (.at s 0) #_int no -1 s (.plus s 1) d dest] (!= b NUL) => [win (if copy (eos! d) d)]
+                (let-when [[no s ?]
+                        (cond (and (== b (byte \&)) magic)
+                            [0 s nil]
+                        (and (== b (byte \\)) (non-eos? s))
+                            (cond (and (at? s (byte \&)) (not magic))
+                                [0 (.plus s 1) nil]
+                            (<= (byte \0) (.at s 0) (byte \9))
+                                [(- (.at s 0) (byte \0)) (.plus s 1) nil]
                             :else
-                            (do
-                                ((ß int c =) (us-ptr2char s))
-
-                                ((ß int[] a'cc =) (atom (int)))
-                                (cond (some? func_one)
-                                (do
-                                    ((ß func_one =) (.flip func_one a'cc, c))
-                                )
-                                (some? func_all)
-                                (do
-                                    ((ß func_all =) (.flip func_all a'cc, c))
-                                )
-                                :else ;; just copy
-                                (do
-                                    (reset! a'cc c)
+                                (when' (some? (vim-strbyte (u8 "uUlLeE"), (.at s 0))) => [no s nil]
+                                    (condp ==? (.at s 0)
+                                        (byte \u) (reset! f'one (fn   [a c] (reset! a (utf-toupper c)) nil))
+                                        (byte \U) (reset! f'all (fn f [a c] (reset! a (utf-toupper c)) f))
+                                        (byte \l) (reset! f'one (fn   [a c] (reset! a (utf-tolower c)) nil))
+                                        (byte \L) (reset! f'all (fn f [a c] (reset! a (utf-tolower c)) f))
+                                       [(byte \e)
+                                        (byte \E)] (do (reset! f'one nil)
+                                                       (reset! f'all nil)
+                                            ))
+                                    [no (.plus s 1) :recur]
                                 ))
+                        :else
+                            [no s nil]
+                        )
+                ] (not ?) => (recur (.at s 0) no (.plus s 1) d)
 
-                                ;; Copy composing characters separately, one at a time.
-                                ((ß int l =) (dec (us-ptr2len s)))
+                    (cond (< no 0) ;; Ordinary character.
+                        (if (and (== b KB_SPECIAL) (non-eos? 0 s) (non-eos? s 1))
+                            ;; Copy a special key as-is.
+                            (let [d (if copy (-> d (.be 0, b) (.be 1, (.at s 0)) (.be 2, (.at s 1))) d)]
+                                (recur (.at s 2) no (.plus s 3) (.plus d 3)))
 
-                                ((ß s =) (.plus s l))
-                                ((ß len =) (- len l))
-                                (if copy
-                                    (utf-char2bytes @a'cc, dst))
-                                ((ß dst =) (.plus dst (dec (utf-char2len @a'cc))))
-
-                                ((ß dst =) (.plus dst 1))
+                            (let [[b s #_int c d]
+                                    (when' (and (== b (byte \\)) (non-eos? s)) => [b s (us-ptr2char s, -1) d]
+                                        (let [[b d] ;; Check for abbreviations.
+                                                (condp == (.at s 0)
+                                                    (byte \r) [CAR    d]
+                                                    (byte \n) [NL     d]
+                                                    (byte \t) [TAB    d]
+                                                 ;; (byte \e) [ESC    d] ;; Oh no!  \e already has meaning in subst. pat.
+                                                    (byte \b) [Ctrl_H d]
+                                                    ;; If "backslash" is true, the backslash will be removed later.
+                                                    ;; Used to insert a literal CR.
+                                                    (let [d (if backslash (-> (if copy (.be d 0, (byte \\)) d) (.plus 1)) d)]
+                                                        [(.at s 0) d])
+                                                )]
+                                            [b (.plus s 1) (char_u b) d]
+                                        ))
+                                  ;; Write to buffer, if copy is set.
+                                  a'c (atom (int))
+                                  _ (cond
+                                        (some? @f'one) (reset! f'one (@f'one a'c, c))
+                                        (some? @f'all) (reset! f'all (@f'all a'c, c))
+                                        :else          (reset! a'c c)) ;; just copy
+                                  #_int cclen (us-ptr2len-cc s, -1)
+                                  _ (when copy
+                                        (utf-char2bytes @a'c, d))
+                                  d (.plus d (dec (utf-char2len @a'c)))
+                                  #_int clen (us-ptr2len s, -1)
+                                  ;; If the character length is shorter than "cclen",
+                                  ;; there are composing characters; copy them as-is.
+                                  d (when' (< clen cclen) => d
+                                        (when copy
+                                            (BCOPY d, 1, s, (+ -1 clen), (- cclen clen)))
+                                        (.plus d (- cclen clen)))
+                                  s (.plus s (dec cclen))]
+                                (recur (.at s 0) no (.plus s 1) (.plus d 1))
                             ))
+                    :else
+                        (let-when [startpos' (... (:m_startpos @reg_match) no) endpos' (... (:m_endpos @reg_match) no)
+                              [#_Bytes q #_int l]
+                                (when' (<= 0 (:lnum startpos') (:lnum endpos')) => [nil 0]
+                                    (let [q (.plus (reg-getline (:lnum startpos')) (:col startpos'))
+                                          l (if (== (:lnum endpos') (:lnum startpos')) (- (:col endpos') (:col startpos')) (STRLEN q))]
+                                        [q l]
+                                    ))
+                              [d ?]
+                                (when' (some? q) => [d nil]
+                                    (loop [#_long lnum (:lnum startpos') q q l l d d]
+                                        (cond (zero? l)
+                                            (when' (< lnum (:lnum endpos')) => [d nil]
+                                                (let [d (if copy (.be d 0, CAR) d) d (.plus d 1)
+                                                      lnum (inc lnum) q (reg-getline lnum)
+                                                      l (if (== (:lnum endpos') lnum) (:col endpos') (STRLEN q))]
+                                                    (recur lnum q l d)
+                                                ))
+                                        (eos? q)
+                                            [d :abort]
+                                        :else
+                                            (cond (and backslash (or (at? q CAR) (at? q (byte \\))))
+                                                ;; Insert a backslash in front of a CR,
+                                                ;; otherwise it will be replaced by a line break.
+                                                ;; Number of backslashes will be halved later, double them here.
+                                                (let [d (if copy (-> d (.be 0, (byte \\)) (.be 1, (.at q 0))) d)]
+                                                    (recur lnum (.plus q 1) (dec l) (.plus d 2)))
+                                            :else
+                                                (let [a'c (atom (int)) #_int c (us-ptr2char q)
+                                                      _ (cond
+                                                            (some? @f'one) (reset! f'one (@f'one a'c, c))
+                                                            (some? @f'all) (reset! f'all (@f'all a'c, c))
+                                                            :else          (reset! a'c c)) ;; just copy
+                                                      ;; Copy composing characters separately, one at a time.
+                                                      #_int clen (us-ptr2len q)]
+                                                    (when copy
+                                                        (utf-char2bytes @a'c, d))
+                                                    (recur lnum (.plus q clen) (- l clen) (.plus d (utf-char2len @a'c)))
+                                                ))
+                                        ))
+                                )] (not ?) => [(if copy (emsg win, e_re_damg) win) d]
 
-                            ((ß s =) (.plus s 1))
-                            ((ß len =) (dec len))
-                        ))
-                        (recur)
-                    )
-                )
-                ((ß no =) -1)
-            ))
-        )
-
-        (when copy (eos! dst))
-
-        [win (inc (BDIFF dst, dest))]
+                            (recur (.at s 0) -1 (.plus s 1) d))
+                    ))
+            )]
+        [win (inc (BDIFF d, dest))]
     ))
 
 ;; Perform substitutions after a vim-regexec() match.
