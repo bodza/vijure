@@ -23349,844 +23349,406 @@
         UPPER, NUPPER
     ])
 
+(defn- #_Bytes regcoll- [#_int c, #_int extra, #_int' a'fl]
+    ;; If there is no matching ']', we assume the '[' is a normal character.
+    ;; This makes 'incsearch' and ":help [" work.
+    (let [#_Bytes lp (skip-anyof @regparse)]
+        (cond (at? lp (byte \]))     ;; there is a matching ']'
+            ;; In a character class, different parsing rules apply.
+            ;; Not even \ is special anymore, nothing is.
+            (let-when [#_Bytes ret ;; Complement of range.
+                    (if (at? @regparse (byte \^)) (let [ret (regnode (+ ANYBUT extra))] (swap! regparse plus 1) ret) (regnode (+ ANYOF extra)))
+                  ;; At the start ']' and '-' mean the literal character.
+                  #_int startc ;; > 0 when next '-' is a range
+                    (let [startc (.at @regparse 0)] (if (any == startc (byte \]) (byte \-)) (do (regc startc) (swap! regparse plus 1) startc) -1))
+                  _ (loop-when startc (and (non-eos? @regparse) (not-at? @regparse (byte \]))) => :_
+                        (cond (at? @regparse (byte \-))
+                        (do (swap! regparse plus 1)
+                            ;; The '-' is not used for a range at the end and after or before a '\n'.
+                            (if (or (at? @regparse (byte \])) (eos? @regparse) (== startc -1) (and (at? @regparse (byte \\)) (at? @regparse 1 (byte \n))))
+                                ;; [--x] is a range
+                                (let [startc (byte \-)] (regc startc) (recur startc))
+                                ;; also accept "a-[.z.]"
+                                (let [#_int endc (if (at? @regparse (byte \[)) (get-coll-element regparse) 0)
+                                      endc (if (zero? endc) (us-ptr2char-adv regparse, true) endc)
+                                      ;; Handle \o40, \x20 and \u20AC style sequences.
+                                      endc (if (and (== endc (byte \\)) (not @reg_cpo_lit) (not @reg_cpo_bsl)) (coll-get-char) endc)]
+                                    (cond (< endc startc)
+                                        (do (emsg e_invrange)
+                                            (reset! rc_did_emsg true)
+                                            nil)
+                                    (or (< 1 (utf-char2len startc)) (< 1 (utf-char2len endc)))
+                                        ;; Limit to a range of 256 chars.
+                                        (if (< (+ startc 256) endc)
+                                            (do (emsg e_invrange)
+                                                (reset! rc_did_emsg true)
+                                                nil)
+                                            (do (loop-when [startc (inc startc)] (<= startc endc) (regmbc startc) (recur (inc startc)))
+                                                (recur -1)
+                                            ))
+                                    :else
+                                        (do (loop-when [startc (inc startc)] (<= startc endc) (regc startc) (recur (inc startc)))
+                                            (recur -1))
+                                    ))
+                            ))
+                        ;; Only "\]", "\^", "\]" and "\\" are special in Vi.
+                        ;; Vim accepts "\t", "\e", etc., but only when the 'l' flag in 'cpoptions' is not included.
+                        ;; Posix doesn't recognize backslash at all.
+                        (and (at? @regparse (byte \\))
+                             (not @reg_cpo_bsl)
+                             (or (some? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
+                        (do (swap! regparse plus 1)
+                            (cond (at? @regparse (byte \n))
+                                (do ;; '\n' in range: also match NL
+                                    (when (!= ret JUST_CALC_SIZE)
+                                        ;; Using \n inside [^] does not change what matches.  "[^\n]" is the same as ".".
+                                        (when (at? ret ANYOF)
+                                            (.be ret 0, (+ ANYOF ADD_NL))
+                                            (swap! a'fl | HASNL)
+                                        )) ;; else: must have had a \n already
+                                    (swap! regparse plus 1)
+                                    (recur -1))
+                            (or (at? @regparse (byte \d)) (at? @regparse (byte \o)) (at? @regparse (byte \x)) (at? @regparse (byte \u)) (at? @regparse (byte \U)))
+                                (let [startc (coll-get-char)]
+                                    (if (zero? startc) (regc 0x0a) (regmbc startc))
+                                    (recur startc))
+                            :else
+                                (let [startc (backslash-trans (.at (swap! regparse plus 1) -1))]
+                                    (regc startc)
+                                    (recur startc))
+                            ))
+                        (at? @regparse (byte \[))
+                        (let [#_int c_class (get-char-class regparse) a'startc (atom -1)]
+                            ;; Characters assumed to be 8 bits!
+                            (condp == c_class
+                                CLASS_NONE
+                                    (let [c_class (get-equi-class regparse)]
+                                        (if (non-zero? c_class)
+                                            (reg-equi-class c_class) ;; produce equivalence class
+                                            (let [c_class (get-coll-element regparse)]
+                                                (if (non-zero? c_class)
+                                                    (regmbc c_class) ;; produce a collating element
+                                                    (regc (reset! a'startc (.at (swap! regparse plus 1) -1))) ;; literal '[', allow [[-x] as a range
+                                                ))
+                                        ))
+                                CLASS_ALNUM     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalnum cu)  (regc cu)))
+                                CLASS_ALPHA     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalpha cu)  (regc cu)))
+                                CLASS_BLANK (do (regc (byte \space)) (regc TAB))
+                                CLASS_CNTRL     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-iscntrl cu)  (regc cu)))
+                                CLASS_DIGIT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isdigit cu)  (regc cu)))
+                                CLASS_GRAPH     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isgraph cu)  (regc cu)))
+                                CLASS_LOWER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-islower cu)  (regc cu)))
+                                CLASS_PRINT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (vim-isprintc cu) (regc cu)))
+                                CLASS_PUNCT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-ispunct cu)  (regc cu)))
+                                CLASS_SPACE (do (loop-when-recur [#_int cu 9] (<= cu  13) [(inc cu)]                         (regc cu)) (regc (byte \space)))
+                                CLASS_UPPER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-isupper cu)  (regc cu)))
+                                CLASS_XDIGIT    (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isxdigit cu) (regc cu)))
+                                CLASS_TAB       (regc TAB)
+                                CLASS_RETURN    (regc (byte \return))
+                                CLASS_BACKSPACE (regc (byte \backspace))
+                                CLASS_ESCAPE    (regc ESC)
+                            )
+                            (recur @a'startc)
+                        )
+                        :else
+                        ;; produce a multibyte character including any following composing characters
+                        (let [startc (us-ptr2char @regparse) #_int n (us-ptr2len-cc @regparse)
+                              startc (if (!= (utf-char2len startc) n) -1 startc)] ;; composing chars
+                            (loop-when-recur n (< 0 n) (dec n) (regc (.at (swap! regparse plus 1) -1)))
+                            (recur startc)
+                        ))
+                    )] (some? _) => nil
+                (regc NUL)
+                (reset! prevchr_len 1)                  ;; last char was the ']'
+                (if (not-at? @regparse (byte \]))
+                    (do (emsg e_toomsbra)
+                        (reset! rc_did_emsg true)
+                        nil)                            ;; Cannot happen?
+                    (do (skipchr)                       ;; let's be friends with the lexer again
+                        (swap! a'fl | HASWIDTH SIMPLE)
+                        ret)
+                ))
+        @reg_strict
+            (do (emsg2 e_missingbracket, (if (< MAGIC_OFF @reg_magic) (u8 "") (u8 "\\")))
+                (reset! rc_did_emsg true)
+                nil)
+        :else
+            (do-multibyte c, a'fl))
+    ))
+
+(defn- #_Bytes regclass- [#_int c, #_int extra, #_int' a'fl]
+    (let [#_Bytes p (vim-strchr classchars, (no-Magic c))]
+        (cond (nil? p)
+            (do (emsg (u8 "E63: invalid use of \\_"))
+                (reset! rc_did_emsg true)
+                nil)
+        ;; When '.' is followed by a composing char ignore the dot,
+        ;; so that the composing char is matched here.
+        (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
+            (let [c (getchr) #_Bytes ret (regnode MULTIBYTECODE)]
+                (regmbc c)
+                (swap! a'fl | HASWIDTH SIMPLE)
+                ret)
+        :else
+            (let [#_Bytes ret (regnode (+ (... classcodes (BDIFF p, classchars)) extra))]
+                (swap! a'fl | HASWIDTH SIMPLE)
+                ret
+            ))
+    ))
+
 ;; Parse the lowest level.
 ;;
-;; Optimization:  gobbles an entire sequence of ordinary characters so that
+;; Optimization: gobbles an entire sequence of ordinary characters so
 ;; it can turn them into a single node, which is smaller to store and
 ;; faster to run.  Don't do this when one_exactly is set.
 
 (defn- #_Bytes regatom [#_int' a'fl]
-    (§
-        (ß Bytes ret)
+    (reset! a'fl WORST)             ;; Tentatively.
+    (let [#_int c (getchr)]
+        (condp ==? c
+            (Magic (byte \^)) (regnode BOL)
+            (Magic (byte \$)) (regnode EOL)
+            (Magic (byte \<)) (regnode BOW)
+            (Magic (byte \>)) (regnode EOW)
 
-        ((ß int extra =) 0)
-
-        (reset! a'fl WORST)             ;; Tentatively.
-
-        ((ß int c =) (getchr))
-
-;       collection:
-;       {
-            ((ß SWITCH) c
-                ((ß CASE) (Magic (byte \^)))
-                (do
-                    ((ß ret =) (regnode BOL))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \$)))
-                (do
-                    ((ß ret =) (regnode EOL))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \<)))
-                (do
-                    ((ß ret =) (regnode BOW))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \>)))
-                (do
-                    ((ß ret =) (regnode EOW))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \_)))
-                (do
-                    ((ß c =) (no-Magic (getchr)))
-                    (when (== c (byte \^))           ;; "\_^" is start-of-line
-                        ((ß ret =) (regnode BOL))
-                        (ß BREAK)
-                    )
-                    (when (== c (byte \$))           ;; "\_$" is end-of-line
-                        ((ß ret =) (regnode EOL))
-                        (ß BREAK)
-                    )
-
-                    ((ß extra =) ADD_NL)
-                    (swap! a'fl | HASNL)
-
-                    ;; "\_[" is character range plus newline
-                    (if (== c (byte \[))
-                        (ß BREAK collection)
-                    )
-
-                    ;; "\_x" is character class plus newline
-                    (ß FALLTHROUGH)
-                )
-
-                ;; Character classes.
-
-                ((ß CASE) (Magic (byte \.)))
-                ((ß CASE) (Magic (byte \i)))
-                ((ß CASE) (Magic (byte \I)))
-                ((ß CASE) (Magic (byte \k)))
-                ((ß CASE) (Magic (byte \K)))
-                ((ß CASE) (Magic (byte \f)))
-                ((ß CASE) (Magic (byte \F)))
-                ((ß CASE) (Magic (byte \p)))
-                ((ß CASE) (Magic (byte \P)))
-                ((ß CASE) (Magic (byte \s)))
-                ((ß CASE) (Magic (byte \S)))
-                ((ß CASE) (Magic (byte \d)))
-                ((ß CASE) (Magic (byte \D)))
-                ((ß CASE) (Magic (byte \x)))
-                ((ß CASE) (Magic (byte \X)))
-                ((ß CASE) (Magic (byte \o)))
-                ((ß CASE) (Magic (byte \O)))
-                ((ß CASE) (Magic (byte \w)))
-                ((ß CASE) (Magic (byte \W)))
-                ((ß CASE) (Magic (byte \h)))
-                ((ß CASE) (Magic (byte \H)))
-                ((ß CASE) (Magic (byte \a)))
-                ((ß CASE) (Magic (byte \A)))
-                ((ß CASE) (Magic (byte \l)))
-                ((ß CASE) (Magic (byte \L)))
-                ((ß CASE) (Magic (byte \u)))
-                ((ß CASE) (Magic (byte \U)))
-                (do
-                    ((ß Bytes p =) (vim-strchr classchars, (no-Magic c)))
-                    (when (nil? p)
-                        (emsg (u8 "E63: invalid use of \\_"))
-                        (reset! rc_did_emsg true)
-                        ((ß RETURN) nil)
-                    )
-                    ;; When '.' is followed by a composing char ignore the dot,
-                    ;; so that the composing char is matched here.
-                    (when (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
-                        ((ß c =) (getchr))
-                        ((ß ret =) (regnode MULTIBYTECODE))
-                        (regmbc c)
-                        (swap! a'fl | HASWIDTH SIMPLE)
-                        (ß BREAK)
-                    )
-                    ((ß ret =) (regnode (+ (... classcodes (BDIFF p, classchars)) extra)))
-                    (swap! a'fl | HASWIDTH SIMPLE)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \n)))
-                (do
-                    (cond @reg_string
-                    (do
-                        ;; In a string "\n" matches a newline character.
-                        ((ß ret =) (regnode EXACTLY))
-                        (regc NL)
-                        (regc NUL)
-                        (swap! a'fl | HASWIDTH SIMPLE)
-                    )
-                    :else
-                    (do
-                        ;; In buffer text "\n" matches the end of a line.
-                        ((ß ret =) (regnode NEWL))
-                        (swap! a'fl | HASWIDTH HASNL)
+            (Magic (byte \_))
+                (let [c (no-Magic (getchr))]
+                    (condp == c
+                        (byte \^) (regnode BOL)             ;; "\_^" is start-of-line
+                        (byte \$) (regnode EOL)             ;; "\_$" is end-of-line
+                        (let [#_int extra ADD_NL]
+                            (swap! a'fl | HASNL)
+                            (if (== c (byte \[))
+                                (regcoll- c, extra, a'fl)   ;; "\_[" is character range plus newline
+                                (regclass- c, extra, a'fl)  ;; "\_x" is character class plus newline
+                            ))
                     ))
-                    (ß BREAK)
-                )
 
-                ((ß CASE) (Magic (byte \()))
-                (do
-                    (when @one_exactly
-                        (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+           [(Magic (byte \.))                   ;; Character classes.
+            (Magic (byte \i)) (Magic (byte \I))
+            (Magic (byte \k)) (Magic (byte \K))
+            (Magic (byte \f)) (Magic (byte \F))
+            (Magic (byte \p)) (Magic (byte \P))
+            (Magic (byte \s)) (Magic (byte \S))
+            (Magic (byte \d)) (Magic (byte \D))
+            (Magic (byte \x)) (Magic (byte \X))
+            (Magic (byte \o)) (Magic (byte \O))
+            (Magic (byte \w)) (Magic (byte \W))
+            (Magic (byte \h)) (Magic (byte \H))
+            (Magic (byte \a)) (Magic (byte \A))
+            (Magic (byte \l)) (Magic (byte \L))
+            (Magic (byte \u)) (Magic (byte \U))] (regclass- c, 0, a'fl)
+
+            (Magic (byte \n))
+                (if @reg_string
+                    ;; In a string "\n" matches a newline character.
+                    (let [#_Bytes ret (regnode EXACTLY)] (regc NL) (regc NUL) (swap! a'fl | HASWIDTH SIMPLE) ret)
+                    ;; In buffer text "\n" matches the end of a line.
+                    (let [#_Bytes ret (regnode NEWL)] (swap! a'fl | HASWIDTH HASNL) ret))
+
+            (Magic (byte \())
+                (if @one_exactly
+                    (do (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                         (reset! rc_did_emsg true)
-                        ((ß RETURN) nil)
-                    )
-                    ((ß int[] a'flags =) (atom (int)))
-                    ((ß ret =) (reg REG_PAREN, a'flags))
-                    (if (nil? ret)
-                        ((ß RETURN) nil)
-                    )
-                    (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
-                    (ß BREAK)
-                )
+                        nil)
+                    (let [a'flags (atom (int)) #_Bytes ret (reg REG_PAREN, a'flags)]
+                        (if (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret) nil)
+                    ))
 
-                ((ß CASE) NUL)
-                ((ß CASE) (Magic (byte \|)))
-                ((ß CASE) (Magic (byte \&)))
-                ((ß CASE) (Magic (byte \))))
-                (do
-                    (if @one_exactly
+           [NUL (Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]
+                (do (if @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                         (emsg e_internal))       ;; Supposed to be caught earlier.
                     (reset! rc_did_emsg true)
-                    ((ß RETURN) nil)
-                )
+                    nil)
 
-                ((ß CASE) (Magic (byte \=)))
-                ((ß CASE) (Magic (byte \?)))
-                ((ß CASE) (Magic (byte \+)))
-                ((ß CASE) (Magic (byte \@)))
-                ((ß CASE) (Magic (byte \{)))
-                ((ß CASE) (Magic (byte \*)))
-                (do
-                    ((ß c =) (no-Magic c))
-                    (.sprintf libC @ioBuff, (u8 "E64: %s%c follows nothing"), (if (if (== c (byte \*)) (<= MAGIC_ON @reg_magic) (== @reg_magic MAGIC_ALL)) (u8 "") (u8 "\\")), c)
-
+           [(Magic (byte \=)) (Magic (byte \?)) (Magic (byte \+)) (Magic (byte \@)) (Magic (byte \{)) (Magic (byte \*))]
+                (let [c (no-Magic c)]
+;%%                 (.sprintf libC @ioBuff, (u8 "E64: %s%c follows nothing"), (if (if (== c (byte \*)) (<= MAGIC_ON @reg_magic) (== @reg_magic MAGIC_ALL)) (u8 "") (u8 "\\")), c)
                     (emsg @ioBuff)
                     (reset! rc_did_emsg true)
-                    ((ß RETURN) nil)
-                )
+                    nil)
 
-                ((ß CASE) (Magic (byte \~)))                    ;; previous substitute pattern
-                (do
-                    (cond (some? @reg_prev_sub)
-                    (do
-                        ((ß ret =) (regnode EXACTLY))
-                        ((ß Bytes lp =) @reg_prev_sub)
-                        (loop-when [] (non-eos? lp)
-                            (regc (.at ((ß lp =) (.plus lp 1)) -1))
-                            (recur)
-                        )
+            (Magic (byte \~))                    ;; previous substitute pattern
+                (if (some? @reg_prev_sub)
+                    (let [#_Bytes ret (regnode EXACTLY)
+                          #_Bytes s (loop-when-recur [s @reg_prev_sub] (non-eos? s) [(.plus s 1)] => s
+                                (regc (.at s 0))
+                            )]
                         (regc NUL)
                         (when (non-eos? @reg_prev_sub)
                             (swap! a'fl | HASWIDTH)
-                            (when (== (BDIFF lp, @reg_prev_sub) 1)
-                                (swap! a'fl | SIMPLE))
-                        )
-                    )
-                    :else
-                    (do
-                        (emsg e_nopresub)
+                            (when (== (BDIFF s, @reg_prev_sub) 1)
+                                (swap! a'fl | SIMPLE)))
+                        ret)
+                    (do (emsg e_nopresub)
                         (reset! rc_did_emsg true)
-                        ((ß RETURN) nil)
-                    ))
-                    (ß BREAK)
-                )
+                        nil))
 
-                ((ß CASE) (Magic (byte \1)))
-                ((ß CASE) (Magic (byte \2)))
-                ((ß CASE) (Magic (byte \3)))
-                ((ß CASE) (Magic (byte \4)))
-                ((ß CASE) (Magic (byte \5)))
-                ((ß CASE) (Magic (byte \6)))
-                ((ß CASE) (Magic (byte \7)))
-                ((ß CASE) (Magic (byte \8)))
-                ((ß CASE) (Magic (byte \9)))
-                (do
-                    ((ß int refnum =) (- c (Magic (byte \0))))
-
+           [(Magic (byte \1)) (Magic (byte \2)) (Magic (byte \3)) (Magic (byte \4)) (Magic (byte \5)) (Magic (byte \6)) (Magic (byte \7)) (Magic (byte \8)) (Magic (byte \9))]
+                (let [#_int refnum (- c (Magic (byte \0)))]
                     ;; Check if the back reference is legal.  We must have seen the close brace.
-                    ;; TODO: Should also check that we don't refer to something
+                    ;; TODO:  Should also check that we don't refer to something
                     ;; that is repeated (+*=): what instance of the repetition should we match?
-
-                    (when (not (... @had_endbrace refnum))
-                        ;; Trick: check if "@<=" or "@<!" follows, in which case
-                        ;; the \1 can appear before the referenced match.
-                        ((ß Bytes p =) (loop-when-recur [p @regparse] (non-eos? p) [(.plus p 1)] => p
-                            (if (and (at? p (byte \@)) (at? p 1 (byte \<)) (or (at? p 2 (byte \!)) (at? p 2 (byte \=))))
-                                (ß BREAK)
-                            )
-                        ))
-                        (when (eos? p)
-                            (emsg (u8 "E65: Illegal back reference"))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) nil)
-                        )
-                    )
-                    ((ß ret =) (regnode (+ BACKREF refnum)))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \z)))
-                (do
-                    ((ß c =) (no-Magic (getchr)))
-                    ((ß SWITCH) c
-                        ((ß CASE) (byte \())
-                        (do
-                            (when (!= @reg_do_extmatch REX_SET)
-                                (emsg e_z_not_allowed)
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            (when @one_exactly
-                                (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            ((ß int[] a'flags =) (atom (int)))
-                            ((ß ret =) (reg REG_ZPAREN, a'flags))
-                            (if (nil? ret)
-                                ((ß RETURN) nil)
-                            )
-                            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
-                            (reset! re_has_z REX_SET)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) (byte \1))
-                        ((ß CASE) (byte \2))
-                        ((ß CASE) (byte \3))
-                        ((ß CASE) (byte \4))
-                        ((ß CASE) (byte \5))
-                        ((ß CASE) (byte \6))
-                        ((ß CASE) (byte \7))
-                        ((ß CASE) (byte \8))
-                        ((ß CASE) (byte \9))
-                        (do
-                            (when (!= @reg_do_extmatch REX_USE)
-                                (emsg e_z1_not_allowed)
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            ((ß ret =) (regnode (- (+ ZREF c) (byte \0))))
-                            (reset! re_has_z REX_USE)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) (byte \s))
-                        (do
-                            ((ß ret =) (regnode (+ MOPEN 0)))
-                            (if (not (re-mult-next (u8 "\\zs")))
-                                ((ß RETURN) nil)
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) (byte \e))
-                        (do
-                            ((ß ret =) (regnode (+ MCLOSE 0)))
-                            (if (not (re-mult-next (u8 "\\ze")))
-                                ((ß RETURN) nil)
-                            )
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT)
-                        (do
-                            (emsg (u8 "E68: Invalid character after \\z"))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) nil)
-                        )
-                    )
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \%)))
-                (do
-                    ((ß c =) (no-Magic (getchr)))
-                    ((ß SWITCH) c
-                        ;; () without a back reference
-                        ((ß CASE) (byte \())
-                        (do
-                            (when @one_exactly
-                                (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            ((ß int[] a'flags =) (atom (int)))
-                            ((ß ret =) (reg REG_NPAREN, a'flags))
-                            (if (nil? ret)
-                                ((ß RETURN) nil)
-                            )
-                            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
-                            (ß BREAK)
-                        )
-                        ;; Catch \%^ and \%$ regardless of where they appear in the
-                        ;; pattern -- regardless of whether or not it makes sense.
-                        ((ß CASE) (byte \^))
-                        (do
-                            ((ß ret =) (regnode RE_BOF))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) (byte \$))
-                        (do
-                            ((ß ret =) (regnode RE_EOF))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) (byte \#))
-                        (do
-                            ((ß ret =) (regnode CURSOR))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) (byte \V))
-                        (do
-                            ((ß ret =) (regnode RE_VISUAL))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) (byte \C))
-                        (do
-                            ((ß ret =) (regnode RE_COMPOSING))
-                            (ß BREAK)
-                        )
-
-                        ;; \%[abc]: Emit as a list of branches,
-                        ;; all ending at the last branch which matches nothing.
-                        ((ß CASE) (byte \[))
-                        (do
-                            (when @one_exactly        ;; doesn't nest
-                                (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-
-                            (ß Bytes lastbranch)
-                            ((ß Bytes lastnode =) nil)
-                            (ß Bytes br)
-
-                            ((ß ret =) nil)
-                            (loop-when [] (!= ((ß c =) (getchr)) (byte \]))
-                                (when (== c NUL)
-                                    (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                    (if (... @had_endbrace refnum)
+                        (regnode (+ BACKREF refnum))
+                        ;; Trick: check if "@<=" or "@<!" follows, in which case the \1 can appear before the referenced match.
+                        (let [#_Bytes p (loop-when [p @regparse] (non-eos? p) => p
+                                    (recur-if (not (and (at? p (byte \@)) (at? p 1 (byte \<)) (or (at? p 2 (byte \!)) (at? p 2 (byte \=))))) [(.plus p 1)] => p)
+                                )]
+                            (if (eos? p)
+                                (do (emsg (u8 "E65: Illegal back reference"))
                                     (reset! rc_did_emsg true)
-                                    ((ß RETURN) nil)
-                                )
-                                ((ß br =) (regnode BRANCH))
-                                (if (nil? ret)
-                                    ((ß ret =) br)
-                                    (regtail lastnode, br))
-
-                                (ungetchr)
-                                (reset! one_exactly true)
-                                ((ß lastnode =) (regatom a'fl))
-                                (reset! one_exactly false)
-                                (if (nil? lastnode)
-                                    ((ß RETURN) nil)
-                                )
-                                (recur)
-                            )
-                            (when (nil? ret)
-                                (emsg2 e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            ((ß lastbranch =) (regnode BRANCH))
-                            ((ß br =) (regnode NOTHING))
-                            (when (!= ret JUST_CALC_SIZE)
-                                (regtail lastnode, br)
-                                (regtail lastbranch, br)
-                                ;; connect all branches to the NOTHING branch at the end
-                                ((ß br =) (loop-when [br ret] (BNE br, lastnode) => br
-                                    (cond (== (re-op br) BRANCH)
-                                    (do
-                                        (regtail br, lastbranch)
-                                        ((ß br =) (operand br))
-                                    )
-                                    :else
-                                    (do
-                                        ((ß br =) (regnext br))
-                                    ))
-                                    (recur br)
-                                ))
-                            )
-                            (swap! a'fl & (bit-not (| HASWIDTH SIMPLE)))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) (byte \d))   ;; %d123 decimal
-                        ((ß CASE) (byte \o))   ;; %o123 octal
-                        ((ß CASE) (byte \x))   ;; %xab hex 2
-                        ((ß CASE) (byte \u))   ;; %uabcd hex 4
-                        ((ß CASE) (byte \U))   ;; %U1234abcd hex 8
-                        (do
-                            ((ß int i =) (condp == c
-                                (byte \d) (getdecchrs)
-                                (byte \o) (getoctchrs)
-                                (byte \x) (gethexchrs 2)
-                                (byte \u) (gethexchrs 4)
-                                (byte \U) (gethexchrs 8)
-                                          -1
+                                    nil)
+                                (regnode (+ BACKREF refnum))
                             ))
-
-                            (when (< i 0)
-                                (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            ((ß ret =) (regnode (if (use-multibytecode i) MULTIBYTECODE EXACTLY)))
-                            (if (zero? i)
-                                (regc 0x0a)
-                                (regmbc i))
-                            (regc NUL)
-                            (swap! a'fl | HASWIDTH)
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT)
-                        (do
-                            (when (or (asc-isdigit c) (== c (byte \<)) (== c (byte \>)) (== c (byte \')))
-                                ((ß int cmp =) c)
-                                ((ß c =) (if (any == cmp (byte \<) (byte \>)) (getchr) c))
-
-                                ((ß long n =) 0)
-                                (loop-when [] (asc-isdigit c)
-                                    ((ß n =) (+ (* n 10) (- c (byte \0))))
-                                    ((ß c =) (getchr))
-                                    (recur)
-                                )
-
-                                (cond (and (== c (byte \')) (zero? n))
-                                (do
-                                    ;; "\%'m", "\%<'m" and "\%>'m": Mark
-                                    ((ß c =) (getchr))
-                                    ((ß ret =) (regnode RE_MARK))
-                                    (cond (== ret JUST_CALC_SIZE)
-                                    (do
-                                        (swap! regsize + 2)
-                                    )
-                                    :else
-                                    (do
-                                        (.be (swap! regcode plus 1) -1, c)
-                                        (.be (swap! regcode plus 1) -1, cmp)
-                                    ))
-                                    (ß BREAK)
-                                )
-                                (any == c (byte \l) (byte \c) (byte \v))
-                                (do
-                                    (cond (== c (byte \l))
-                                    (do
-                                        ((ß ret =) (regnode RE_LNUM))
-                                    )
-                                    (== c (byte \c))
-                                    (do
-                                        ((ß ret =) (regnode RE_COL))
-                                    )
-                                    :else
-                                    (do
-                                        ((ß ret =) (regnode RE_VCOL))
-                                    ))
-                                    (cond (== ret JUST_CALC_SIZE)
-                                    (do
-                                        (swap! regsize + 5)
-                                    )
-                                    :else
-                                    (do
-                                        ;; put the number and the optional
-                                        ;; comparator after the opcode
-                                        (swap! regcode re-put-long n)
-                                        (.be (swap! regcode plus 1) -1, cmp)
-                                    ))
-                                    (ß BREAK)
-                                ))
-                            )
-
-                            (emsg2 (u8 "E71: Invalid character after %s%%"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) nil)
-                        )
-                    )
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \[)))
-                (do
-                    (ß BREAK collection)
-                )
-
-                (ß DEFAULT)
-                (do
-                    ((ß RETURN) (do-multibyte c, a'fl))
-                )
-            )
-
-            ((ß RETURN) ret)
-;       }
-
-        ;; If there is no matching ']', we assume the '[' is a normal character.
-        ;; This makes 'incsearch' and ":help [" work.
-
-        ((ß Bytes lp =) (skip-anyof @regparse))
-
-        (when (at? lp (byte \]))     ;; there is a matching ']'
-            ((ß int startc =) -1)    ;; > 0 when next '-' is a range
-            (ß int endc)
-
-            ;; In a character class, different parsing rules apply.
-            ;; Not even \ is special anymore, nothing is.
-
-            (cond (at? @regparse (byte \^))       ;; Complement of range.
-            (do
-                ((ß ret =) (regnode (+ ANYBUT extra)))
-                (swap! regparse plus 1)
-            )
-            :else
-            (do
-                ((ß ret =) (regnode (+ ANYOF extra)))
-            ))
-
-            ;; At the start ']' and '-' mean the literal character.
-            (when (or (at? @regparse (byte \])) (at? @regparse (byte \-)))
-                ((ß startc =) (.at @regparse 0))
-                (regc (.at (swap! regparse plus 1) -1))
-            )
-
-            (loop-when [] (and (non-eos? @regparse) (not-at? @regparse (byte \])))
-                (cond (at? @regparse (byte \-))
-                (do
-                    (swap! regparse plus 1)
-                    ;; The '-' is not used for a range at the end and after or before a '\n'.
-                    (cond (or (at? @regparse (byte \])) (eos? @regparse) (== startc -1) (and (at? @regparse (byte \\)) (at? @regparse 1 (byte \n))))
-                    (do
-                        (regc (byte \-))
-                        ((ß startc =) (byte \-))       ;; [--x] is a range
-                    )
-                    :else
-                    (do
-                        ;; Also accept "a-[.z.]".
-                        ((ß endc =) 0)
-                        (when (at? @regparse (byte \[))
-                            (let [__ (atom (#_Bytes object @regparse))]
-                                ((ß endc =) (get-coll-element __))
-                                (reset! regparse @__))
-                        )
-                        (when (zero? endc)
-                            (let [__ (atom (#_Bytes object @regparse))]
-                                ((ß endc =) (us-ptr2char-adv __, true))
-                                (reset! regparse @__))
-                        )
-
-                        ;; Handle \o40, \x20 and \u20AC style sequences.
-                        ((ß endc =) (if (and (== endc (byte \\)) (not @reg_cpo_lit) (not @reg_cpo_bsl)) (coll-get-char) endc))
-
-                        (when (< endc startc)
-                            (emsg e_invrange)
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) nil)
-                        )
-                        (cond (or (< 1 (utf-char2len startc)) (< 1 (utf-char2len endc)))
-                        (do
-                            ;; Limit to a range of 256 chars.
-                            (when (< (+ startc 256) endc)
-                                (emsg e_invrange)
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) nil)
-                            )
-                            (loop-when [] (<= ((ß startc =) (inc startc)) endc)
-                                (regmbc startc)
-                                (recur)
-                            )
-                        )
-                        :else
-                        (do
-                            (loop-when [] (<= ((ß startc =) (inc startc)) endc)
-                                (regc startc)
-                                (recur)
-                            )
-                        ))
-                        ((ß startc =) -1)
                     ))
-                )
 
-                ;; Only "\]", "\^", "\]" and "\\" are special in Vi.  Vim
-                ;; accepts "\t", "\e", etc., but only when the 'l' flag in
-                ;; 'cpoptions' is not included.
-                ;; Posix doesn't recognize backslash at all.
-
-                (and (at? @regparse (byte \\)) (not @reg_cpo_bsl) (or (some? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
-                (do
-                    (swap! regparse plus 1)
-                    (cond (at? @regparse (byte \n))
-                    (do
-                        ;; '\n' in range: also match NL
-                        (when (!= ret JUST_CALC_SIZE)
-                            ;; Using \n inside [^] does not change what
-                            ;; matches.  "[^\n]" is the same as ".".
-                            (when (at? ret ANYOF)
-                                (.be ret 0, (+ ANYOF ADD_NL))
-                                (swap! a'fl | HASNL)
-                            )
-                            ;; else: must have had a \n already
-                        )
-                        (swap! regparse plus 1)
-                        ((ß startc =) -1)
-                    )
-                    (or (at? @regparse (byte \d)) (at? @regparse (byte \o)) (at? @regparse (byte \x)) (at? @regparse (byte \u)) (at? @regparse (byte \U)))
-                    (do
-                        ((ß startc =) (coll-get-char))
-                        (if (zero? startc)
-                            (regc 0x0a)
-                            (regmbc startc))
-                    )
-                    :else
-                    (do
-                        ((ß startc =) (backslash-trans (.at (swap! regparse plus 1) -1)))
-                        (regc startc)
-                    ))
-                )
-                (at? @regparse (byte \[))
-                (do
-                    (ß int c_class)
-                    (let [__ (atom (#_Bytes object @regparse))]
-                        ((ß c_class =) (get-char-class __))
-                        (reset! regparse @__))
-                    ((ß startc =) -1)
-                    ;; Characters assumed to be 8 bits!
-                    ((ß SWITCH) c_class
-                        ((ß CASE) CLASS_NONE)
-                        (do
-                            (let [__ (atom (#_Bytes object @regparse))]
-                                ((ß c_class =) (get-equi-class __))
-                                (reset! regparse @__))
-                            (cond (non-zero? c_class)
-                            (do
-                                ;; produce equivalence class
-                                (reg-equi-class c_class)
-                            )
+            (Magic (byte \z))
+                (let [c (no-Magic (getchr))]
+                    (condp ==? c
+                        (byte \()
+                            (cond (!= @reg_do_extmatch REX_SET)
+                                (do (emsg e_z_not_allowed)
+                                    (reset! rc_did_emsg true)
+                                    nil)
+                            @one_exactly
+                                (do (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (reset! rc_did_emsg true)
+                                    nil)
                             :else
-                            (do
-                                (let [__ (atom (#_Bytes object @regparse))]
-                                    ((ß c_class =) (get-coll-element __))
-                                    (reset! regparse @__))
-                                (cond (non-zero? c_class)
-                                (do
-                                    ;; produce a collating element
-                                    (regmbc c_class)
-                                )
-                                :else
-                                (do
-                                    ;; literal '[', allow [[-x] as a range
-                                    ((ß startc =) (.at (swap! regparse plus 1) -1))
-                                    (regc startc)
+                                (let [a'flags (atom (int)) #_Bytes ret (reg REG_ZPAREN, a'flags)]
+                                    (if (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) (reset! re_has_z REX_SET) ret) nil)
                                 ))
-                            ))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_ALNUM)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-isalnum cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_ALPHA)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-isalpha cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_BLANK)
-                        (do
-                            (regc (byte \space))
-                            (regc TAB)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_CNTRL)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-iscntrl cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_DIGIT)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-isdigit cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_GRAPH)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-isgraph cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_LOWER)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (utf-islower cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_PRINT)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (vim-isprintc cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_PUNCT)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-ispunct cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_SPACE)
-                        (do
-                            (loop-when-recur [#_int cu 9] (<= cu 13) [(inc cu)]
-                                (regc cu)
-                            )
-                            (regc (byte \space))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_UPPER)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (utf-isupper cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_XDIGIT)
-                        (do
-                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
-                                (when (asc-isxdigit cu)
-                                    (regc cu))
-                            )
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_TAB)
-                        (do
-                            (regc TAB)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_RETURN)
-                        (do
-                            (regc (byte \return))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_BACKSPACE)
-                        (do
-                            (regc (byte \backspace))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) CLASS_ESCAPE)
-                        (do
-                            (regc ESC)
-                            (ß BREAK)
-                        )
-                    )
-                )
-                :else
-                (do
-                    ;; produce a multibyte character,
-                    ;; including any following composing characters
-                    ((ß startc =) (us-ptr2char @regparse))
-                    ((ß int len =) (us-ptr2len-cc @regparse))
-                    ((ß startc =) (if (!= (utf-char2len startc) len) -1 startc))        ;; composing chars
-                    (loop-when-recur len (< 0 len) (dec len)
-                        (regc (.at (swap! regparse plus 1) -1))
-                    )
-                ))
-                (recur)
-            )
-            (regc NUL)
-            (reset! prevchr_len 1)                ;; last char was the ']'
-            (when (not-at? @regparse (byte \]))
-                (emsg e_toomsbra)
-                (reset! rc_did_emsg true)
-                ((ß RETURN) nil)                ;; Cannot happen?
-            )
-            (skipchr)                      ;; let's be friends with the lexer again
-            (swap! a'fl | HASWIDTH SIMPLE)
-            ((ß RETURN) ret)
-        )
 
-        (when @reg_strict
-            (emsg2 e_missingbracket, (if (< MAGIC_OFF @reg_magic) (u8 "") (u8 "\\")))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
+                       [(byte \1) (byte \2) (byte \3) (byte \4) (byte \5) (byte \6) (byte \7) (byte \8) (byte \9)]
+                            (if (!= @reg_do_extmatch REX_USE)
+                                (do (emsg e_z1_not_allowed)
+                                    (reset! rc_did_emsg true)
+                                    nil)
+                                (let [#_Bytes ret (regnode (- (+ ZREF c) (byte \0)))]
+                                    (reset! re_has_z REX_USE)
+                                    ret
+                                ))
 
-        (do-multibyte c, a'fl)
+                        (byte \s) (let [#_Bytes ret (regnode (+ MOPEN 0))] (if (re-mult-next (u8 "\\zs")) ret nil))
+                        (byte \e) (let [#_Bytes ret (regnode (+ MCLOSE 0))] (if (re-mult-next (u8 "\\ze")) ret nil))
+
+                        (do (emsg (u8 "E68: Invalid character after \\z"))
+                            (reset! rc_did_emsg true)
+                            nil)
+                    ))
+
+            (Magic (byte \%))
+                (let [c (no-Magic (getchr))]
+                    (condp ==? c
+                        (byte \() ;; () without a back reference
+                            (if @one_exactly
+                                (do (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (reset! rc_did_emsg true)
+                                    nil)
+                                (let [a'flags (atom (int)) #_Bytes ret (reg REG_NPAREN, a'flags)]
+                                    (if (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret) nil)
+                                ))
+
+                        ;; Catch \%^ and \%$ regardless of where they appear in the pattern -- regardless of whether or not it makes sense.
+                        (byte \^) (regnode RE_BOF)
+                        (byte \$) (regnode RE_EOF)
+                        (byte \#) (regnode CURSOR)
+                        (byte \V) (regnode RE_VISUAL)
+                        (byte \C) (regnode RE_COMPOSING)
+
+                        ;; \%[abc]: Emit as a list of branches, all ending at the last branch which matches nothing.
+                        (byte \[)
+                            (if @one_exactly        ;; doesn't nest
+                                (do (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (reset! rc_did_emsg true)
+                                    nil)
+                                (let-when [[#_Bytes lastnode #_Bytes ret :as _]
+                                        (loop-when [lastnode nil ret nil c (getchr)] (!= c (byte \])) => [lastnode ret]
+                                            (if (== c NUL)
+                                                (do (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                                    (reset! rc_did_emsg true)
+                                                    nil)
+                                                (let [#_Bytes br (regnode BRANCH) ret (if (nil? ret) br (do (regtail lastnode, br) ret))]
+                                                    (ungetchr)
+                                                    (let [_ (reset! one_exactly true) lastnode (regatom a'fl) _ (reset! one_exactly false)]
+                                                        (recur-if (some? lastnode) [lastnode ret (getchr)] => nil)
+                                                    ))
+                                            ))] (some? _) => nil
+                                    (if (nil? ret)
+                                        (do (emsg2 e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                            (reset! rc_did_emsg true)
+                                            nil)
+                                        (let [#_Bytes lastbranch (regnode BRANCH) #_Bytes br (regnode NOTHING)]
+                                            (when (!= ret JUST_CALC_SIZE)
+                                                (regtail lastnode, br)
+                                                (regtail lastbranch, br)
+                                                ;; connect all branches to the NOTHING branch at the end
+                                                (loop-when [br ret] (BNE br, lastnode)
+                                                    (recur (if (== (re-op br) BRANCH) (do (regtail br, lastbranch) (operand br)) (regnext br)))
+                                                ))
+                                            (swap! a'fl & (bit-not (| HASWIDTH SIMPLE)))
+                                            ret
+                                        ))
+                                ))
+
+                       [(byte \d)   ;; %d123 decimal
+                        (byte \o)   ;; %o123 octal
+                        (byte \x)   ;; %xab hex 2
+                        (byte \u)   ;; %uabcd hex 4
+                        (byte \U)]  ;; %U1234abcd hex 8
+                            (let [#_int i (condp == c
+                                        (byte \d) (getdecchrs)
+                                        (byte \o) (getoctchrs)
+                                        (byte \x) (gethexchrs 2)
+                                        (byte \u) (gethexchrs 4)
+                                        (byte \U) (gethexchrs 8)
+                                    -1)]
+                                (if (< i 0)
+                                    (do (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        (reset! rc_did_emsg true)
+                                        nil)
+                                    (let [#_Bytes ret (regnode (if (use-multibytecode i) MULTIBYTECODE EXACTLY))]
+                                        (if (zero? i) (regc 0x0a) (regmbc i))
+                                        (regc NUL)
+                                        (swap! a'fl | HASWIDTH)
+                                        ret)
+                                ))
+
+                        (let-when [[ret :as _]
+                                (when (or (asc-isdigit c) (== c (byte \<)) (== c (byte \>)) (== c (byte \')))
+                                    (let [#_int cmp c c (if (any == cmp (byte \<) (byte \>)) (getchr) c)
+                                          [#_long n c] (loop-when-recur [n 0 c c] (asc-isdigit c) [(+ (* n 10) (- c (byte \0))) (getchr)] => [n c])]
+                                        (cond (and (== c (byte \')) (zero? n))
+                                            (let [c (getchr) #_Bytes ret (regnode RE_MARK)] ;; "\%'m", "\%<'m" and "\%>'m": Mark
+                                                (if (== ret JUST_CALC_SIZE)
+                                                    (swap! regsize + 2)
+                                                    (do
+                                                        (-> @regcode (.be 0, c) (.be 1, cmp))
+                                                        (swap! regcode plus 2)
+                                                    ))
+                                                [ret])
+                                        (any == c (byte \l) (byte \c) (byte \v))
+                                            (let [#_Bytes ret (regnode (cond (== c (byte \l)) RE_LNUM (== c (byte \c)) RE_COL :else RE_VCOL))]
+                                                (if (== ret JUST_CALC_SIZE)
+                                                    (swap! regsize + 5)
+                                                    (do ;; put the number and the optional comparator after the opcode
+                                                        (swap! regcode re-put-long n)
+                                                        (.be @regcode 0, cmp)
+                                                        (swap! regcode plus 1)
+                                                    ))
+                                                [ret])
+                                        ))
+                                )] (nil? _) => ret
+                            (do (emsg2 (u8 "E71: Invalid character after %s%%"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                (reset! rc_did_emsg true)
+                                nil))
+                    ))
+
+            (Magic (byte \[)) (regcoll- c, 0, a'fl)
+
+            (do-multibyte c, a'fl))
     ))
 
 (defn- #_final #_Bytes do-multibyte [#_int c, #_int' a'fl]
