@@ -14258,164 +14258,97 @@
         nil
     ))
 
-;; Insert string "s" (b_insert ? before : after) block.
+;; Insert string "s" ("ins" ? before : after) block.
 ;; Caller must prepare for undo.
 
-(defn- #_void block-insert [#_oparg_C oap, #_Bytes s, #_boolean b_insert, #_boolean is_MAX]
-    (§
-        ((ß int count =) 0)                                  ;; extra spaces to replace a cut TAB
-        ((ß int spaces =) 0)                                 ;; non-zero if cutting a TAB
-
-        ((ß int oldstate =) @State)
-        (reset! State INSERT)                                 ;; don't want REPLACE for State
-
-        ((ß int s_len =) (STRLEN s))
-
-        (loop-when-recur [#_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-            ((ß #_block_def_C bd =) (block-prep oap, is_MAX, lnum, true))
-            (if (and (:is_short bd) b_insert)
-                (ß CONTINUE)                               ;; OP_INSERT, line ends before block start
-            )
-
-            ((ß Bytes oldp =) (ml-get lnum))
-
-            (ß int q_ts)
-            (ß int offset)
-            (cond b_insert
-            (do
-                ((ß q_ts =) (:start_char_vcols bd))
-                ((ß spaces =) (:startspaces bd))
-                ((ß count =) (if (non-zero? spaces) (dec q_ts) count))                   ;; we're cutting a TAB
-                ((ß offset =) (:textcol bd))
-            )
-            :else                                        ;; append
-            (do
-                ((ß q_ts =) (:end_char_vcols bd))
-                (cond (not (:is_short bd))                      ;; spaces = padding after block
-                (do
-                    ((ß spaces =) (if (non-zero? (:endspaces bd)) (- q_ts (:endspaces bd)) 0))
-                    ((ß count =) (if (non-zero? spaces) (dec q_ts) count))               ;; we're cutting a TAB
-                    ((ß offset =) (- (+ (:textcol bd) (:textlen bd)) (if (non-zero? spaces) 1 0)))
-                )
-                :else                                    ;; spaces = padding to block edge
-                (do
-                    ;; if $ used, just append to EOL (ie spaces==0)
-                    ((ß spaces =) (if (not (:is_MAX bd)) (inc (- (:end_vcol oap) (:end_vcol bd))) spaces))
-                    ((ß count =) spaces)
-                    ((ß offset =) (+ (:textcol bd) (:textlen bd)))
-                ))
+(defn- #_void block-insert [#_oparg_C oap, #_Bytes s, #_boolean ins, #_boolean is_MAX]
+    (let [#_int state' @State _ (reset! State INSERT) ;; don't want REPLACE for State
+          #_int n (STRLEN s)]
+        ;; ct: non-zero if cutting a TAB ;; es: extra spaces to replace a cut TAB
+        (loop-when [#_int ct 0 #_int es 0 #_long y (inc (:lnum (:op_start oap)))] (<= y (:lnum (:op_end oap)))
+            (let [#_block_def_C bd (block-prep oap, is_MAX, y, true)]
+                (if (and (:is_short bd) ins)
+                    (recur ct es (inc y))                       ;; OP_INSERT, line ends before block start
+                    (let [#_Bytes p (ml-get y)
+                          [#_int ts ct es #_int x]
+                            (if ins
+                                (let [ts (:start_char_vcols bd) ct (:startspaces bd)]
+                                    [ts ct (if (non-zero? ct) (dec ts) es) (:textcol bd)])
+                                (let [ts (:end_char_vcols bd)]
+                                    (if (not (:is_short bd))
+                                        ;; ct = padding after block
+                                        (let [ct (if (non-zero? (:endspaces bd)) (- ts (:endspaces bd)) 0)]
+                                            [ts ct (if (non-zero? ct) (dec ts) es) (- (+ (:textcol bd) (:textlen bd)) (if (non-zero? ct) 1 0))])
+                                        ;; ct = padding to block edge ;; if $ used, just append to EOL (ie ct==0)
+                                        (let [ct (if (not (:is_MAX bd)) (inc (- (:end_vcol oap) (:end_vcol bd))) ct)]
+                                            [ts ct ct (+ (:textcol bd) (:textlen bd))])
+                                    )))
+                          [ct es x]
+                            (if (< 0 ct) ;; Avoid starting halfway a multi-byte character.
+                                (let [[#_int i x] (if ins [(us-head-off p, (.plus p (+ x ct))) x] (let [i (us-off-next p, (.plus p x))] [i (+ x i)]))]
+                                    [(- ct i) (- es i) x])
+                                [ct es x])
+                          #_Bytes q (Bytes. (+ (STRLEN p) n es 1))
+                          _ (BCOPY q, p, x)                 ;; copy up to shifted part
+                          p (.plus p x)
+                          _ (copy-spaces (.plus q x), ct)   ;; insert pre-padding
+                          _ (BCOPY q, (+ x ct), s, 0, n)    ;; copy the new text
+                          x (+ x n)
+                          [p es]
+                            (if (and (< 0 ct) (not (:is_short bd)))
+                                (do (copy-spaces (.plus q (+ x ct)), (- ts ct)) ;; insert post-padding
+                                    ;; We're splitting a TAB, don't copy it.
+                                    ;; We allowed for that TAB, remember this now.
+                                    [(.plus p 1) (inc es)])
+                                [p es])
+                          x (if (< 0 ct) (+ x es) x)
+                          _ (BCOPY q, x, p, 0, (inc (STRLEN p)))]
+                        (ml-replace y, q)
+                        (when (== y (:lnum (:op_end oap)))
+                            ;; Set "']" mark to the end of the block instead of the end of the insert in the first line.
+                            (swap! curbuf update :b_op_end assoc :lnum y :col x))
+                        (recur ct es (inc y))
+                    ))
             ))
-
-            (when (< 0 spaces)
-                (ß int off)
-
-                ;; Avoid starting halfway a multi-byte character.
-                (cond b_insert
-                (do
-                    ((ß off =) (us-head-off oldp, (.plus oldp (+ offset spaces))))
-                )
-                :else
-                (do
-                    ((ß off =) (us-off-next oldp, (.plus oldp offset)))
-                    ((ß offset =) (+ offset off))
-                ))
-                ((ß spaces =) (- spaces off))
-                ((ß count =) (- count off))
-            )
-
-            ((ß Bytes newp =) (Bytes. (+ (STRLEN oldp) s_len count 1)))
-
-            ;; copy up to shifted part
-            (BCOPY newp, oldp, offset)
-            ((ß oldp =) (.plus oldp offset))
-
-            ;; insert pre-padding
-            (copy-spaces (.plus newp offset), spaces)
-
-            ;; copy the new text
-            (BCOPY newp, (+ offset spaces), s, 0, s_len)
-            ((ß offset =) (+ offset s_len))
-
-            (when (and (< 0 spaces) (not (:is_short bd)))
-                ;; insert post-padding
-                (copy-spaces (.plus newp (+ offset spaces)), (- q_ts spaces))
-                ;; We're splitting a TAB, don't copy it.
-                ((ß oldp =) (.plus oldp 1))
-                ;; We allowed for that TAB, remember this now.
-                ((ß count =) (inc count))
-            )
-
-            ((ß offset =) (if (< 0 spaces) (+ offset count) offset))
-            (BCOPY newp, offset, oldp, 0, (inc (STRLEN oldp)))
-
-            (ml-replace lnum, newp)
-
-            (when (== lnum (:lnum (:op_end oap)))
-                ;; Set "']" mark to the end of the block instead of the end of the insert in the first line.
-                (swap! curbuf assoc-in [:b_op_end :lnum] (:lnum (:op_end oap)))
-                (swap! curbuf assoc-in [:b_op_end :col] offset)
-            )
-        )
-
         (changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
-
-        (reset! State oldstate)
-        nil
-    ))
+        (reset! State state'))
+    nil)
 
 ;; op-reindent - handle reindenting a block of lines.
 
 (defn- #_void op-reindent [#_oparg_C oap, #_getindent_F getindent]
-    (§
-        ((ß long first_changed =) 0)
-        ((ß long last_changed =) 0)
-        ((ß long start_lnum =) (:lnum (:w_cursor @curwin)))
-
-        ((ß long i =) (loop-when [i (dec (:line_count oap))] (and (<= 0 i) (not @got_int)) => i
-            ;; It's a slow thing to do, so give feedback,
-            ;; so there's no worry that the computer's just hung.
-
-            (when (and (< 1 i) (or (zero? (% i 50)) (== i (dec (:line_count oap)))) (< @p_report (:line_count oap)))
-                (smsg (u8 "%ld lines to indent... "), i))
-
-            (when (set-indent (if (non-eos? (skipwhite (ml-get-curline))) (getindent) 0), SIN_UNDO)
-                ;; did change the indent, call changed-lines() later
-                ((ß first_changed =) (if (zero? first_changed) (:lnum (:w_cursor @curwin)) first_changed))
-                ((ß last_changed =) (:lnum (:w_cursor @curwin)))
-            )
-
-            (swap! curwin update-in [:w_cursor :lnum] inc)
-            (swap! curwin assoc-in [:w_cursor :col] 0)            ;; make sure it's valid
-            (recur (dec i))
-        ))
-
+    (let [#_long n (:lnum (:w_cursor @curwin)) m (:line_count oap)
+          [#_long x #_long y #_long i]
+            (loop-when [x 0 y 0 i (dec m)] (and (<= 0 i) (not @got_int)) => [x y i]
+                ;; It's a slow thing to do, so give feedback, so there's no worry that the computer's just hung.
+                (when (and (< 1 i) (or (zero? (% i 50)) (== i (dec m))) (< @p_report m))
+                    (smsg (u8 "%ld lines to indent... "), i))
+                (let [[x y] (if (set-indent (if (non-eos? (skipwhite (ml-get-curline))) (getindent) 0), SIN_UNDO)
+                                (let [l (:lnum (:w_cursor @curwin))] [(if (zero? x) l x) l])
+                                [x y]
+                            )]
+                    (crlf!)
+                    (recur x y (dec i)))
+            )]
         ;; put cursor on first non-blank of indented line
-        (swap! curwin assoc-in [:w_cursor :lnum] start_lnum)
+        (swap! curwin assoc-in [:w_cursor :lnum] n)
         (beginline (| BL_SOL BL_FIX))
-
         ;; Mark changed lines so that they will be redrawn.
         ;; When Visual highlighting was present, need to continue until the last line.
-        ;; When there is no change still need to remove the Visual highlighting.
-        (cond (non-zero? last_changed)
-        (do
-            (changed-lines first_changed, 0, (if (:is_VIsual oap) (+ start_lnum (:line_count oap)) (inc last_changed)), 0)
+        ;; When there is no change, still need to remove the Visual highlighting.
+        (cond
+            (non-zero? y)    (changed-lines x, 0, (if (:is_VIsual oap) (+ n m) (inc y)), 0)
+            (:is_VIsual oap) (redraw-curbuf-later INVERTED)
         )
-        (:is_VIsual oap)
-        (do
-            (redraw-curbuf-later INVERTED)
-        ))
-
-        (when (< @p_report (:line_count oap))
-            ((ß i =) (- (:line_count oap) (inc i)))
-            (if (== i 1)
-                (msg (u8 "1 line indented "))
-                (smsg (u8 "%ld lines indented "), i))
-        )
+        (when (< @p_report m)
+            (let [i (- m (inc i))]
+                (if (== i 1)
+                    (msg (u8 "1 line indented "))
+                    (smsg (u8 "%ld lines indented "), i))
+            ))
         ;; set '[ and '] marks
-        (swap! curbuf assoc :b_op_start (:op_start oap))
-        (swap! curbuf assoc :b_op_end (:op_end oap))
-        nil
-    ))
+        (swap! curbuf assoc :b_op_start (:op_start oap) :b_op_end (:op_end oap)))
+    nil)
 
 ;; Keep the last expression line here, for repeating.
 
@@ -14540,62 +14473,36 @@
 ;; Return false for failure, true otherwise.
 
 (defn- #_boolean do-record [#_int c]
-    (§
-        (ß boolean retval)
-
-        (cond (not @Recording)         ;; start recording
-        (do
-            ;; registers 0-9, a-z and " are allowed
-            (cond (or (< c 0) (and (not (asc-isalnum c)) (!= c (byte \")))) ;; """
-            (do
-                ((ß retval =) false)
-            )
-            :else
-            (do
-                (reset! Recording true)
+    (cond (not @Recording)          ;; start recording
+    (do
+        ;; registers 0-9, a-z and " are allowed
+        (if (or (< c 0) (and (not (asc-isalnum c)) (!= c (byte \")))) ;; """
+            false
+            (do (reset! Recording true)
                 (showmode)
                 (reset! rec__regname c)
-                ((ß retval =) true)
-            ))
-        )
-        :else                            ;; stop recording
-        (do
-            ;; Get the recorded key hits.
-            ;; KB_SPECIAL will be escaped, this needs to be removed again to put it in a register.
-            ;; exec_reg then adds the escaping back later.
-
-            (reset! Recording false)
-            (msg (u8 ""))
-            ((ß Bytes p =) (get-recorded))
-            (cond (nil? p)
-            (do
-                ((ß retval =) false)
-            )
-            :else
-            (do
-                ;; Remove escaping for KB_SPECIAL in multi-byte chars.
-                (vim-unescape-special p)
-
-                ;; We don't want to change the default register here,
-                ;; so save and restore the current register name.
-
-                ((ß yankreg_C old_y_previous =) @y_previous)
-                ((ß yankreg_C old_y_current =) @y_current)
-
-                ((ß retval =) (stuff-yank @rec__regname, p))
-
-                (reset! y_previous old_y_previous)
-                (reset! y_current old_y_current)
-            ))
+                true))
+    )
+    :else                           ;; stop recording
+    (do
+        ;; Get the recorded key hits.
+        ;; KB_SPECIAL will be escaped, this needs to be removed again to put it in a register.
+        ;; exec_reg then adds the escaping back later.
+        (reset! Recording false)
+        (msg (u8 ""))
+        (let-when [#_Bytes p (get-recorded)] (some? p) => false
+            ;; Remove escaping for KB_SPECIAL in multi-byte chars.
+            (vim-unescape-special p)
+            ;; We don't want to change the default register here,
+            ;; so save and restore the current register name.
+            (let [#_yankreg_C yp @y_previous #_yankreg_C yc @y_current #_boolean b (stuff-yank @rec__regname, p) _ (reset! y_previous yp) _ (reset! y_current yc)]
+                b)
         ))
-
-        retval
     ))
 
 ;; Stuff string "p" into yank register "regname" as a single line (append if uppercase).
-;; "p" must have been alloced.
 ;;
-;; return false for failure, true otherwise
+;; Return false for failure, true otherwise.
 
 (defn- #_boolean stuff-yank [#_int regname, #_Bytes p]
     (§
@@ -14630,93 +14537,60 @@
         true
     ))
 
+(final Bytes CTRL_1_31 (u8 "\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037"))
+
 (atom! int execreg_lastc NUL)
 
-;; execute a yank register: copy it into the stuff buffer
+;; Execute a yank register: copy it into the stuff buffer.
 ;;
-;; return false for failure, true otherwise
+;; Return false for failure, true otherwise.
 
 (defn- #_boolean do-execreg [#_int regname]
-    (§
-        (when (== regname (byte \@))                 ;; repeat previous one
-            (when (== @execreg_lastc NUL)
-                (emsg (u8 "E748: No previously used register"))
-                ((ß RETURN) false)
-            )
-            ((ß regname =) @execreg_lastc)
-        )
-                                            ;; check for valid regname
-        (when (or (== regname (byte \%)) (== regname (byte \#)) (not (valid-yank-reg regname, false)))
-            (emsg-invreg regname)
-            ((ß RETURN) false)
-        )
-        (reset! execreg_lastc regname)
+    (let-when [[regname :as _]
+            (if (== regname (byte \@))                                                      ;; repeat previous one
+                (let [regname @execreg_lastc] (if (== regname NUL) nil [regname]))
+                [regname]
+            )] (some? _) => (do (emsg (u8 "E748: No previously used register")) false)
 
-        ((ß regname =) (may-get-selection regname))
-
-        (if (== regname (byte \_))                 ;; black hole: don't stuff anything
-            ((ß RETURN) true)
-        )
-
-        (when (== regname (byte \:))                 ;; use last command line
-            (when (nil? @last_cmdline)
-                (emsg e_nolastcmd)
-                ((ß RETURN) false)
-            )
-
-            (reset! new_last_cmdline nil)        ;; don't keep the cmdline containing @:
-
-            ;; Escape all control characters with a CTRL-V.
-            ((ß Bytes p =) (vim-strsave-escaped-ext @last_cmdline, (u8 "\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037"), Ctrl_V))
-
-            ;; When in Visual mode "'<,'>" will be prepended to the command.
-            ;; Remove it when it's already there.
-            ((ß p =) (if (and @VIsual_active (zero? (STRNCMP p, (u8 "'<,'>"), 5))) (.plus p 5) p))
-
-            (put-in-typebuf p, true, true)
-            ((ß RETURN) true)
-        )
-
-        (when (== regname (byte \=))
-            ((ß Bytes p =) (get-expr-line))
-            (if (nil? p)
-                ((ß RETURN) false)
-            )
-
-            (put-in-typebuf p, true, false)
-            ((ß RETURN) true)
-        )
-
-        (when (== regname (byte \.))            ;; use last inserted text
-            ((ß Bytes p =) (get-last-insert-save))
-            (when (nil? p)
-                (emsg e_noinstext)
-                ((ß RETURN) false)
-            )
-            (put-in-typebuf p, false, false)
-            ((ß RETURN) true)
-        )
-
-        (get-yank-register regname, false)
-        (if (nil? (:y_array @y_current))
-            ((ß RETURN) false)
-        )
-
-        ;; Insert lines into typeahead buffer, from last one to first one.
-
-        (put-reedit-in-typebuf)
-
-        (loop-when-recur [#_int i (:y_size @y_current)] (< 0 i) [(dec i)]
-            ;; insert NL between lines and after last line if type is MLINE
-            (when (or (== (:y_type @y_current) MLINE) (< i (:y_size @y_current)))
-                (ins-typebuf (u8 "\n")))
-
-            (ins-typebuf (vim-strsave-escape-special (... (:y_array @y_current) (dec i))))
-        )
-
-        (reset! execReg true)         ;; disable the 'q' command
-
-        true
+        (if (or (any == regname (byte \%) (byte \#)) (not (valid-yank-reg regname, false))) ;; check for valid regname
+            (do (emsg-invreg regname)
+                false)
+            (let [_ (reset! execreg_lastc regname) regname (may-get-selection regname)]
+                (condp == regname
+                    (byte \_)                                                               ;; black hole: don't stuff anything
+                        true
+                    (byte \:)                                                               ;; use last command line
+                        (if (some? @last_cmdline)
+                            (let [_ (reset! new_last_cmdline nil)                           ;; don't keep the cmdline containing @:
+                                  ;; Escape all control characters with a CTRL-V.
+                                  #_Bytes p (vim-strsave-escaped-ext @last_cmdline, CTRL_1_31, Ctrl_V)
+                                  ;; When in Visual mode "'<,'>" will be prepended to the command.
+                                  ;; Remove it when it's already there.
+                                  p (if (and @VIsual_active (zero? (STRNCMP p, (u8 "'<,'>"), 5))) (.plus p 5) p)]
+                                (put-in-typebuf p, true, true)
+                                true)
+                            (do (emsg e_nolastcmd)
+                                false))
+                    (byte \=)
+                        (let-when [#_Bytes p (get-expr-line)] (some? p) => false
+                            (put-in-typebuf p, true, false)
+                            true)
+                    (byte \.)                                                               ;; use last inserted text
+                        (let-when [#_Bytes p (get-last-insert-save)] (some? p) => (do (emsg e_noinstext) false)
+                            (put-in-typebuf p, false, false)
+                            true)
+                    (let-when [_ (get-yank-register regname, false)] (some? (:y_array @y_current)) => false
+                        ;; Insert lines into typeahead buffer, from last one to first one.
+                        (put-reedit-in-typebuf)
+                        (loop-when-recur [#_int i (:y_size @y_current)] (< 0 i) [(dec i)]
+                            ;; insert NL between lines and after last line if type is MLINE
+                            (when (or (== (:y_type @y_current) MLINE) (< i (:y_size @y_current)))
+                                (ins-typebuf (u8 "\n")))
+                            (ins-typebuf (vim-strsave-escape-special (... (:y_array @y_current) (dec i)))))
+                        (reset! execReg true)                                               ;; disable the 'q' command
+                        true
+                    ))
+            ))
     ))
 
 ;; If "restart_edit" is not zero, put it in the typeahead buffer,
