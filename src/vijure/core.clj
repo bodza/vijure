@@ -30121,7 +30121,7 @@
         ((ß Bytes[] newarray =) nil)
         ((ß long newlnum =) MAXLNUM)
         ((ß u_entry_C newlist =) nil)
-        ((ß u_header_C curhead =) (:b_u_curhead @curbuf))
+        ((ß u_header_C curhead =) (:b_u_curhead @curbuf))
 
         ((ß int old_flags =) (:uh_flags curhead))
         ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0)))
@@ -30167,7 +30167,7 @@
                     ;; Use the first line that actually changed.
                     ;; Avoids that undoing auto-formatting puts the cursor in the previous line.
                     ((ß int i =) (loop-when-recur [i 0] (and (< i newsize) (< i oldsize) (zero? (STRCMP (... (:ue_array uep) i), (ml-get (+ top 1 i))))) [(inc i)] => i))
-                    (cond (and (== i newsize) (== newlnum MAXLNUM) (nil? (:ue_next uep)))
+                    (cond (and (== i newsize) (== newlnum MAXLNUM) (nil? (:ue_next uep)))
                     (do
                         ((ß newlnum =) top)
                         ((ß win =) (assoc-in win [:w_cursor :lnum] (inc newlnum)))
@@ -30242,12 +30242,12 @@
 
             ;; insert this entry in front of the new entry list
 
-            ((ß nuep =) (:ue_next uep))
-            ((ß uep =) (assoc uep :ue_next newlist))
+            ((ß nuep =) (:ue_next uep))
+            ((ß uep =) (assoc uep :ue_next newlist))
             ((ß newlist =) uep)
         )
 
-        ((ß curhead =) (assoc curhead :uh_entry newlist))
+        ((ß curhead =) (assoc curhead :uh_entry newlist))
         ((ß curhead =) (assoc curhead :uh_flags new_flags))
         (when (and (flag? old_flags UH_EMPTYBUF) (bufempty))
             (swap! curbuf assoc-in [:b_ml :ml_empty] true))
